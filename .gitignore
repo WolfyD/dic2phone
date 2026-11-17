@@ -12,3 +12,4 @@ app/src/main/assets/sounds/
 # Signing keys
 *.jks
 *.keystore
+keystore.properties

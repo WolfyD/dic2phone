@@ -1,7 +1,14 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.plugin.compose")
 }
+
+// Release signing comes from keystore.properties (gitignored). Without it, or with -PdebugSign,
+// release builds are signed with the debug key so anyone building from source can still install them.
+val keystore = rootProject.file("keystore.properties").takeIf { it.exists() && !project.hasProperty("debugSign") }
+    ?.let { f -> Properties().apply { f.inputStream().use(::load) } }
 
 android {
     namespace = "com.dic2phone"
@@ -14,7 +21,8 @@ android {
         minSdk = 29
         targetSdk = 36
         versionCode = 1
-        versionName = "0.1"
+        versionName = "1.0"
+        base.archivesName = "dic2phone-$versionName"
         // Captions run whisper.cpp natively; built for 64-bit ARM phones only.
         ndk { abiFilters += "arm64-v8a" }
     }
@@ -26,10 +34,20 @@ android {
         }
     }
 
+    signingConfigs {
+        if (keystore != null) create("release") {
+            storeFile = file(keystore.getProperty("storeFile"))
+            storePassword = keystore.getProperty("storePassword")
+            keyAlias = keystore.getProperty("keyAlias")
+            keyPassword = keystore.getProperty("keyPassword")
+        }
+    }
     buildTypes {
         release {
-            isMinifyEnabled = false
-            signingConfig = signingConfigs.getByName("debug")
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            signingConfig = signingConfigs.findByName("release") ?: signingConfigs.getByName("debug")
         }
     }
     compileOptions {

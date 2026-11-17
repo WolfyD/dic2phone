@@ -31,6 +31,25 @@ Open the project in Android Studio, or run:
 
 Captions are built natively from `app/src/main/cpp/whisper.cpp` for 64-bit ARM phones.
 
+### Release APK
+
+```sh
+./gradlew assembleRelease
+```
+
+The APK lands in `app/build/outputs/apk/release/`. To sign it with your own key, create
+`keystore.properties` in the project root (it's ignored by git):
+
+```properties
+storeFile=C:/path/to/your.jks
+storePassword=...
+keyAlias=...
+keyPassword=...
+```
+
+Without that file, or with `-PdebugSign`, the release is signed with the debug key so it
+can still be installed for testing.
+
 ### Key sounds
 
 Official builds use real cassette-deck recordings from Pixabay for the key clicks.
