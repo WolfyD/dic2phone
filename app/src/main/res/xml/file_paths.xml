@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <external-files-path name="deck" path="deck/" />
+    <files-path name="deck_internal" path="deck/" />
+    <cache-path name="lofi" path="lofi/" />
+    <cache-path name="vault_send" path="vault_send/" />
+    <cache-path name="cc" path="cc/" />
+</paths>

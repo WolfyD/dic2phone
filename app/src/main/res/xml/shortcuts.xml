@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher_rec"
+        android:shortcutId="quick_rec"
+        android:shortcutShortLabel="@string/shortcut_rec">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetClass="com.dic2phone.QuickRecordActivity"
+            android:targetPackage="com.dic2phone" />
+    </shortcut>
+</shortcuts>

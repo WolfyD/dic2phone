@@ -1,0 +1,8 @@
+<resources>
+    <style name="Theme.Dic2Phone" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/deck_bg</item>
+        <item name="android:colorBackground">@color/deck_bg</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+    </style>
+</resources>

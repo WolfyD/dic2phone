@@ -1,0 +1,14 @@
+.gradle/
+build/
+local.properties
+.idea/
+*.iml
+.kotlin/
+.cxx/
+
+# Pixabay sounds: Pixabay Content License, not GPL; never published (see NOTICE)
+app/src/main/assets/sounds/
+
+# Signing keys
+*.jks
+*.keystore
