@@ -40,6 +40,7 @@ final class TapeFactsTests: XCTestCase {
     func testAnUnknownSourceIsShownAsItIs() {
         XCTAssertEqual(TapeFacts.startedBy("shortcut"), "shortcut")
         XCTAssertEqual(TapeFacts.startedBy("widget:big"), "Home-screen widget")
+        XCTAssertEqual(TapeFacts.startedBy("intent"), "Siri, Shortcuts or the Action Button")
     }
 
     private func value(_ name: String, in facts: [TapeFact]) -> String? {

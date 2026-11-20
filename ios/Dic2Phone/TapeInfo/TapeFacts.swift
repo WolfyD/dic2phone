@@ -31,6 +31,7 @@ enum TapeFacts {
         case let s where s.hasPrefix("headset"): String(localized: "Headset button")
         case let s where s.hasPrefix("quick:android.intent.action.ASSIST"): String(localized: "Squeeze / assistant gesture")
         case let s where s.hasPrefix("quick:"): String(localized: "Quick REC (icon, tile or side key)")
+        case let s where s.hasPrefix("intent"): String(localized: "Siri, Shortcuts or the Action Button")
         case let s where s.hasPrefix("widget"): String(localized: "Home-screen widget")
         case let s where s.hasPrefix("tile"): String(localized: "Quick settings tile")
         case let s where s.hasPrefix("split"): String(localized: "Continued from the previous hour")
