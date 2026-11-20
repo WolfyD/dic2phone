@@ -57,6 +57,15 @@ actor TapeStore {
         try saveMeta(updated, for: id)
     }
 
+    /// For details that arrive after a tape was put away. Once a tape is sealed in the vault its
+    /// plain metadata is gone, and a late detail must not bring it back beside the sealed copy.
+    func updateUnsealedMeta(of id: TapeID, _ change: @Sendable (inout TapeMeta) -> Void) throws {
+        let fileManager = FileManager.default
+        let unsealed = [Rack.deck, .shelf].contains { fileManager.fileExists(atPath: storage.tapeURL(id, in: $0).path(percentEncoded: false)) }
+        guard unsealed else { return }
+        try updateMeta(of: id, change)
+    }
+
     /// Nil if the tape has no captions yet.
     func transcript(of id: TapeID) -> Transcript? {
         guard let text = try? String(contentsOf: storage.captionsURL(id), encoding: .utf8) else { return nil }

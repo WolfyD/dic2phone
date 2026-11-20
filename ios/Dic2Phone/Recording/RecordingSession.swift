@@ -12,6 +12,9 @@ final class RecordingSession {
     var startTask: Task<Void, Never>?
     var feedTask: Task<Void, Never>?
     var keptTapes: [TapeID] = []
+    /// WHERE RECORDED, once found: one fix serves every tape of the session.
+    var placeFix: LocationFix?
+    var placeName = ""
     var silent = false
     var failed = false
 

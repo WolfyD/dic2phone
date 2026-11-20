@@ -23,6 +23,8 @@ final class TapeMetaTests: XCTestCase {
         meta.part = 1
         meta.flags = [1_000, 30_000]
         meta.flagNotes = [30_000: "the decision"]
+        meta.location = LocationFix(latitude: 47.5, longitude: 19.04, accuracyM: 12)
+        meta.place = "Budapest, HU"
         return meta
     }
 
@@ -35,8 +37,9 @@ final class TapeMetaTests: XCTestCase {
     func testWritesTheAndroidAppsKeys() throws {
         let keys = try Self.jsonObject(Self.full).keys.sorted()
         XCTAssertEqual(keys, [
-            "avg", "cuts", "device", "dur", "end", "flagNotes", "flags", "format", "latched", "notes",
-            "part", "peak", "size", "skipped", "source", "start", "tags", "title", "v", "vox",
+            "acc", "avg", "cuts", "device", "dur", "end", "flagNotes", "flags", "format", "lat", "latched",
+            "lon", "notes", "part", "peak", "place", "size", "skipped", "source", "start", "tags", "title",
+            "v", "vox",
         ])
     }
 
@@ -65,6 +68,17 @@ final class TapeMetaTests: XCTestCase {
         meta.flags = [1_000]
         meta.flagNotes = [1_000: "  ", 2_000: "orphan"]
         XCTAssertNil(try Self.jsonObject(meta)["flagNotes"])
+    }
+
+    func testDropsCoordinatesThatAreNowhereOnEarth() throws {
+        let meta = try Self.decode(#"{"v":1,"lat":91.5,"lon":19.04,"place":"Budapest"}"#)
+        XCTAssertNil(meta.location)
+        XCTAssertEqual(meta.place, "Budapest")
+    }
+
+    func testKeepsAPlaceWithoutAccuracy() throws {
+        let meta = try Self.decode(#"{"v":1,"lat":-33.86,"lon":151.2,"acc":-1}"#)
+        XCTAssertEqual(meta.location, LocationFix(latitude: -33.86, longitude: 151.2, accuracyM: nil))
     }
 
     private static func jsonObject(_ meta: TapeMeta) throws -> [String: Any] {

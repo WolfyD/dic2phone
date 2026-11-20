@@ -3,6 +3,7 @@ import SwiftUI
 /// How recording behaves, and the deck's own sounds.
 struct RecTab: View {
     @Environment(Settings.self) private var settings
+    @Environment(Locator.self) private var locator
 
     var body: some View {
         VStack(spacing: 10) {
@@ -27,6 +28,28 @@ struct RecTab: View {
             if settings.vox {
                 voxSensitivity
             }
+            whereRecorded
+        }
+    }
+
+    @ViewBuilder
+    private var whereRecorded: some View {
+        SetupToggle(
+            title: String(localized: "WHERE RECORDED"),
+            help: String(localized: "Note the place in each tape's info (coordinates and a place name). It stays on this iPhone and isn't put in the files you send. The place name is looked up with Apple's map service."),
+            isOn: settings.notesPlace && locator.isAllowed
+        ) { toggleWhereRecorded() }
+        if settings.notesPlace, locator.isRefused {
+            SetupHelp(text: String(localized: "Location access is off, so tapes won't get a place. Turn it on in Settings › Dic2Phone › Location."))
+        }
+    }
+
+    /// Location is asked for only now, when the user first wants it. Refused, the toggle stays
+    /// off and says why; allowed later in the Settings app, it comes on by itself.
+    private func toggleWhereRecorded() {
+        settings.notesPlace.toggle()
+        if settings.notesPlace {
+            Task { _ = await locator.requestPermission() }
         }
     }
 

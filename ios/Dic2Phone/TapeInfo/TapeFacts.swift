@@ -15,6 +15,7 @@ enum TapeFacts {
             meta.peakDb.map { fact("LEVEL", level(peakDb: $0, averageDb: meta.averageDb)) },
             meta.source.isEmpty ? nil : fact("STARTED BY", startedBy(meta.source)),
             mode(meta).map { fact("MODE", $0) },
+            meta.location.map { place($0, name: meta.place) },
             meta.flags.isEmpty ? fact("FLAGS", String(localized: "none")) : nil,
             meta.device.isEmpty ? nil : fact("DEVICE", meta.device),
             fact("FILE", tape.id.baseName + "  " + rackName(tape.rack)),
@@ -40,6 +41,18 @@ enum TapeFacts {
 
     private static func fact(_ name: String.LocalizationValue, _ value: String) -> TapeFact {
         TapeFact(name: String(localized: name), value: value)
+    }
+
+    /// The place name over its coordinates; tapping it opens Maps.
+    private static func place(_ fix: LocationFix, name: String) -> TapeFact {
+        let label = name.isEmpty ? fix.coordinates : name + "
+" + fix.coordinates
+        let accuracy = fix.accuracyM.map { "  ±" + $0.formatted(.number.precision(.fractionLength(0)).grouping(.never)) + " m" } ?? ""
+        return TapeFact(
+            name: String(localized: "PLACE"),
+            value: label + accuracy,
+            link: fix.mapsURL(label: name.isEmpty ? fix.coordinates : name)
+        )
     }
 
     private static func recorded(_ tape: Tape, meta: TapeMeta) -> String {

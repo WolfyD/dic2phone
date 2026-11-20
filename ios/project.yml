@@ -53,6 +53,7 @@ targets:
         LSSupportsOpeningDocumentsInPlace: true
         ITSAppUsesNonExemptEncryption: false
         NSMicrophoneUsageDescription: Dic2Phone records what the microphone hears onto tapes stored on this iPhone.
+        NSLocationWhenInUseUsageDescription: Dic2Phone notes where each tape was recorded, when you turn on WHERE RECORDED in Setup.
         NSFaceIDUsageDescription: Dic2Phone uses Face ID to open the vault of locked tapes.
         UIAppFonts:
           - CourierPrime-Regular.ttf

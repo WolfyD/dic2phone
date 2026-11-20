@@ -22,6 +22,7 @@ final class Recorder {
     @ObservationIgnored private let audioSession: AudioSession
     @ObservationIgnored private let player: Player
     @ObservationIgnored private let newTapeCaptions: NewTapeCaptions
+    @ObservationIgnored private let locator: Locator
     @ObservationIgnored private let makeMic: () -> any MicInput
     @ObservationIgnored private var session: RecordingSession?
     @ObservationIgnored private var keyPressedAt: ContinuousClock.Instant?
@@ -34,6 +35,7 @@ final class Recorder {
         audioSession: AudioSession,
         player: Player,
         newTapeCaptions: NewTapeCaptions,
+        locator: Locator,
         makeMic: @escaping () -> any MicInput
     ) {
         self.settings = settings
@@ -43,6 +45,7 @@ final class Recorder {
         self.audioSession = audioSession
         self.player = player
         self.newTapeCaptions = newTapeCaptions
+        self.locator = locator
         self.makeMic = makeMic
     }
 
@@ -84,6 +87,9 @@ final class Recorder {
             try? await Task.sleep(for: Feedback.recStartSoundLength)
             guard !Task.isCancelled else { return }
             beginTape(session)
+        }
+        if settings.notesPlace {
+            Task { await findPlace(for: session) }
         }
     }
 
@@ -159,6 +165,24 @@ final class Recorder {
         feedback.startHiss()
     }
 
+    /// Keeps looking after STOP: a short tape is often put away before the fix comes in.
+    private func findPlace(for session: RecordingSession) async {
+        guard let fix = await locator.fix() else { return }
+        session.placeFix = fix
+        await notePlace(on: session.keptTapes, from: session)
+        guard let name = await locator.placeName(of: fix) else { return }
+        session.placeName = name
+        await notePlace(on: session.keptTapes, from: session)
+    }
+
+    private func notePlace(on tapes: [TapeID], from session: RecordingSession) async {
+        guard let fix = session.placeFix else { return }
+        let name = session.placeName
+        for id in tapes {
+            try? await store.updateUnsealedMeta(of: id) { $0.setPlace(fix, name: name) }
+        }
+    }
+
     private func record(_ chunks: AsyncStream<[Int16]>, with engine: TapeEngine, for session: RecordingSession) async {
         await handle(engine.start(), from: session)
         for await chunk in chunks {
@@ -221,8 +245,9 @@ final class Recorder {
             return
         }
         if tape.durationMs > Self.silentAfterMs, tape.peak < Self.silentPeak { session.silent = true }
+        let meta = meta(for: tape, in: session)
         do {
-            try await store.keepRecording(tape.id, meta: meta(for: tape, in: session))
+            try await store.keepRecording(tape.id, meta: meta)
         } catch {
             // Left in the recording folder, where the next launch rescues it.
             session.failed = true
@@ -233,6 +258,10 @@ final class Recorder {
             try? await store.updateMeta(of: first) { $0.part = 1 }
         }
         session.keptTapes.append(tape.id)
+        // The place may have come in while the tape was being put away.
+        if session.placeFix != meta.location || session.placeName != meta.place {
+            await notePlace(on: [tape.id], from: session)
+        }
         await library.reload()
     }
 
@@ -252,6 +281,9 @@ final class Recorder {
         meta.skippedMs = tape.skippedMs
         meta.part = tape.part > 1 ? tape.part : 0
         meta.flags = tape.flags
+        if let fix = session.placeFix {
+            meta.setPlace(fix, name: session.placeName)
+        }
         return meta
     }
 

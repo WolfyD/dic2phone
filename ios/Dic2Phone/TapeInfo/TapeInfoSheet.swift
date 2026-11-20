@@ -113,14 +113,27 @@ struct TapeInfoSheet: View {
                         .font(DeckFont.mono.fixed(11))
                         .foregroundStyle(palette.dim)
                         .frame(width: Self.factNameWidth, alignment: .leading)
-                    Text(verbatim: fact.value)
+                    factValue(fact)
                         .font(DeckFont.mono.fixed(12))
-                        .foregroundStyle(palette.text)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
             }
         }
         .padding(.top, 6)
+    }
+
+    @ViewBuilder
+    private func factValue(_ fact: TapeFact) -> some View {
+        if let link = fact.link {
+            Link(destination: link) {
+                Text(verbatim: fact.value)
+                    .multilineTextAlignment(.leading)
+            }
+            .foregroundStyle(palette.accent)
+        } else {
+            Text(verbatim: fact.value)
+                .foregroundStyle(palette.text)
+        }
     }
 
     private func load() async {

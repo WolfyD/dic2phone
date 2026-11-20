@@ -14,6 +14,7 @@ final class AppModel {
     let flagKey: FlagKey
     let vault: Vault
     let captions: CaptionQueue
+    let locator: Locator
 
     private let newTapeCaptions: NewTapeCaptions
     private let audioSession: AudioSession
@@ -51,10 +52,12 @@ final class AppModel {
         self.vaultStore = vaultStore
         self.captions = captions
         self.newTapeCaptions = newTapeCaptions
+        let locator = Locator()
+        self.locator = locator
         recorder = Recorder(
             settings: settings, store: store, library: library, feedback: feedback,
             audioSession: audioSession, player: player, newTapeCaptions: newTapeCaptions,
-            makeMic: { EngineMic() }
+            locator: locator, makeMic: { EngineMic() }
         )
         flagKey = FlagKey(player: player, library: library)
         vault = Vault(keychain: VaultKeychain(), store: vaultStore, library: library, player: player, captions: captions)

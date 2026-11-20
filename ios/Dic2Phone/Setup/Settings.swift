@@ -35,6 +35,8 @@ final class Settings {
     var vaultSort: TapeSort { didSet { defaults.set(vaultSort.rawValue, forKey: Key.vaultSort) } }
     var deckTape: TapeID? { didSet { defaults.set(deckTape?.fileName ?? "", forKey: Key.deckTape) } }
     var minidisc: Bool { didSet { defaults.set(minidisc, forKey: Key.minidisc) } }
+    /// WHERE RECORDED.
+    var notesPlace: Bool { didSet { defaults.set(notesPlace, forKey: Key.location) } }
     var labelTyped: Bool { didSet { defaults.set(labelTyped, forKey: Key.labelTyped) } }
     /// Nil until one is picked: the first request for captions asks which.
     var speechModel: SpeechModel? { didSet { defaults.set(speechModel?.rawValue ?? "", forKey: Key.speechModel) } }
@@ -73,6 +75,7 @@ final class Settings {
         vaultSort = TapeSort(rawValue: defaults.string(forKey: Key.vaultSort) ?? "") ?? .newest
         deckTape = defaults.string(forKey: Key.deckTape).flatMap(TapeID.init)
         minidisc = defaults.bool(forKey: Key.minidisc)
+        notesPlace = defaults.bool(forKey: Key.location)
         labelTyped = defaults.bool(forKey: Key.labelTyped)
         speechModel = SpeechModel(rawValue: defaults.string(forKey: Key.speechModel) ?? "")
         let storedLanguage = defaults.string(forKey: Key.captionLanguage) ?? ""
@@ -153,6 +156,7 @@ final class Settings {
         static let tapeLabel = "tape_label"
         static let minidisc = "minidisc"
         static let labelTyped = "label_typed"
+        static let location = "location"
         static let speechModel = "cc_model"
         static let captionLanguage = "cc_lang"
         static let autoCaptions = "auto_cc"

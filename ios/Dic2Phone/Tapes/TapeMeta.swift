@@ -7,6 +7,7 @@ struct TapeMeta: Equatable, Sendable {
     static let titleLimit = 60
     static let notesLimit = 4000
     static let flagNoteLimit = 120
+    static let placeLimit = 200
 
     var title = ""
     var notes = ""
@@ -30,6 +31,14 @@ struct TapeMeta: Equatable, Sendable {
     /// Milliseconds from the start of the tape, sorted.
     var flags: [Int64] = []
     var flagNotes: [Int64: String] = [:]
+    /// WHERE RECORDED: the spot, and its place name if one could be looked up.
+    var location: LocationFix?
+    var place = ""
+
+    mutating func setPlace(_ fix: LocationFix, name: String) {
+        location = fix
+        place = String(name.prefix(Self.placeLimit))
+    }
 }
 
 extension TapeMeta: Codable {
@@ -46,6 +55,10 @@ extension TapeMeta: Codable {
         case source, device, latched, vox, cuts
         case skippedMs = "skipped"
         case part, flags, flagNotes
+        case latitude = "lat"
+        case longitude = "lon"
+        case accuracyM = "acc"
+        case place
     }
 
     init(from decoder: Decoder) throws {
@@ -71,6 +84,15 @@ extension TapeMeta: Codable {
         let notesByKey = try c.decodeIfPresent([String: String].self, forKey: .flagNotes) ?? [:]
         let parsedNotes = notesByKey.compactMap { key, note in Int64(key).map { ($0, note) } }
         flagNotes = Dictionary(parsedNotes, uniquingKeysWith: { first, _ in first })
+        location = try Self.decodeLocation(from: c)
+        place = String((try c.decodeIfPresent(String.self, forKey: .place) ?? "").prefix(Self.placeLimit))
+    }
+
+    private static func decodeLocation(from c: KeyedDecodingContainer<CodingKeys>) throws -> LocationFix? {
+        guard let latitude = try c.decodeIfPresent(Double.self, forKey: .latitude),
+              let longitude = try c.decodeIfPresent(Double.self, forKey: .longitude) else { return nil }
+        let accuracy = try c.decodeIfPresent(Double.self, forKey: .accuracyM)
+        return LocationFix(latitude: latitude, longitude: longitude, accuracyM: accuracy)
     }
 
     /// Empty and default values are left out, like the Android app does.
@@ -101,6 +123,12 @@ extension TapeMeta: Codable {
             let notesByKey = Dictionary(uniqueKeysWithValues: liveNotes.map { (String($0.key), $0.value) })
             try c.encode(notesByKey, forKey: .flagNotes)
         }
+        if let location {
+            try c.encode(location.latitude, forKey: .latitude)
+            try c.encode(location.longitude, forKey: .longitude)
+            try c.encodeIfPresent(location.accuracyM, forKey: .accuracyM)
+        }
+        try c.encodeUnlessEmpty(place, forKey: .place)
     }
 }
 

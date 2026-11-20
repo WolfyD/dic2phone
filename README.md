@@ -18,8 +18,9 @@ reports. Nothing about you or your recordings is ever sent to the developer or a
 The app works fully offline. It only goes online in two cases:
 
 - when you download a caption model, it fetches it from Hugging Face
-- if you turn on WHERE RECORDED, Android's built-in geocoder (usually a Google service)
-  looks up the place name; the place is stored only in the tape on your phone
+- if you turn on WHERE RECORDED, the phone's built-in geocoder looks up the place name
+  (on Android usually a Google service, on iPhone Apple's); the place is stored only with
+  the tape on your phone
 
 ## Building
 
