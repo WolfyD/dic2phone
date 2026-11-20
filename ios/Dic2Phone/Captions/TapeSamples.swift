@@ -8,7 +8,8 @@ final class TapeSamples {
     /// A vault tape's asset only holds its loader weakly.
     private let loader: SealedAssetLoader?
 
-    init(asset: AVURLAsset, loader: SealedAssetLoader? = nil) async throws {
+    /// - Parameter timeRange: only this stretch of the tape; nil for all of it.
+    init(asset: AVURLAsset, loader: SealedAssetLoader? = nil, timeRange: CMTimeRange? = nil) async throws {
         guard let track = try? await asset.loadTracks(withMediaType: .audio).first,
               let reader = try? AVAssetReader(asset: asset) else { throw CaptionError.tapeUnreadable }
         let output = AVAssetReaderTrackOutput(track: track, outputSettings: [
@@ -22,6 +23,7 @@ final class TapeSamples {
         ])
         guard reader.canAdd(output) else { throw CaptionError.tapeUnreadable }
         reader.add(output)
+        if let timeRange { reader.timeRange = timeRange }
         guard reader.startReading() else { throw CaptionError.tapeUnreadable }
         self.reader = reader
         self.output = output

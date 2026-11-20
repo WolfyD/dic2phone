@@ -53,8 +53,8 @@ final class TapeLibrary {
         sealedFiles[tape.id]
     }
 
-    /// Where the tape's sound is read from to make captions; nil for a vault tape while the
-    /// vault is locked.
+    /// Where the tape's sound is decoded from for captions, silences and CUE; nil for a vault
+    /// tape while the vault is locked.
     func source(of tape: Tape) -> TapeSource? {
         guard tape.rack == .vault else { return .plain(store.url(of: tape)) }
         return sealedFiles[tape.id].map(TapeSource.sealed)

@@ -2,7 +2,8 @@ import Observation
 
 /// REW and FF. A tap winds ten seconds. Held, the deck keeps winding until the key is let go:
 /// by ten-second skips, or with TAPE WIND on like a real deck, the counter racing to the motor's
-/// whirr. A tape that was playing plays on from wherever the wind stops.
+/// whirr, or with CUE lit to the tape itself, racing past. A tape that was playing plays on from
+/// wherever the wind stops.
 @MainActor
 @Observable
 final class DeckWinder {
@@ -25,13 +26,17 @@ final class DeckWinder {
     @ObservationIgnored private let player: Player
     @ObservationIgnored private let settings: Settings
     @ObservationIgnored private let feedback: Feedback
+    @ObservationIgnored private let library: TapeLibrary
+    @ObservationIgnored private let cue: CuePlayer
     @ObservationIgnored private var hold: Hold?
     @ObservationIgnored private var holding: Task<Void, Never>?
 
-    init(player: Player, settings: Settings, feedback: Feedback) {
+    init(player: Player, settings: Settings, feedback: Feedback, library: TapeLibrary, cue: CuePlayer) {
         self.player = player
         self.settings = settings
         self.feedback = feedback
+        self.library = library
+        self.cue = cue
     }
 
     func press(forward: Bool) {
@@ -81,6 +86,20 @@ final class DeckWinder {
         hold = .winding(playsOn: player.deckPlaying)
         isWinding = true
         if player.deckPlaying { player.stop() }
+        let ranOut: Bool
+        if settings.windCue, let source = library.source(of: tape) {
+            ranOut = await cueWind(source, of: tape, forward: forward)
+        } else {
+            ranOut = await motorWind(tape, forward: forward)
+        }
+        if ranOut {
+            feedback.windEnd()
+            isWinding = false
+        }
+    }
+
+    /// - Returns: whether the tape ran out.
+    private func motorWind(_ tape: Tape, forward: Bool) async -> Bool {
         feedback.windStart()
         defer { feedback.windStop() }
         let clock = ContinuousClock()
@@ -95,11 +114,15 @@ final class DeckWinder {
             let woundMs = WindMotor.woundMs(in: now - last, spinUp: spinUp)
             player.seek(toMs: before + (forward ? woundMs : -woundMs))
             last = now
-            if player.deckPositionMs == before {
-                feedback.windEnd()
-                isWinding = false
-                return
-            }
+            if player.deckPositionMs == before { return true }
+        }
+        return false
+    }
+
+    /// - Returns: whether the tape ran out.
+    private func cueWind(_ source: TapeSource, of tape: Tape, forward: Bool) async -> Bool {
+        await cue.play(source, fromMs: player.deckPositionMs, durationMs: tape.durationMs, forward: forward) { positionMs in
+            if player.loadedID == tape.id { player.seek(toMs: positionMs) }
         }
     }
 }

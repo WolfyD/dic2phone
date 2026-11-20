@@ -1,8 +1,9 @@
 import SwiftUI
 
-/// The deck as a player for the tape that's in: the position strip with its flags, the play
-/// time and the note on the flag just passed beside the varispeed, the captions, the compartment of less-used keys
-/// and the tape's info, and the transport keys unless they sit elsewhere.
+/// The deck as a player for the tape that's in: the position strip with its flags (and TAPE
+/// WIND's CUE switch), the play time and the note on the flag just passed beside the varispeed,
+/// the captions, the compartment of less-used keys and the tape's info, and the transport keys
+/// unless they sit elsewhere.
 struct DeckPlayer: View {
     private static let compartmentKeyHeight: CGFloat = 38
     private static let faderWidth: CGFloat = 150
@@ -12,6 +13,7 @@ struct DeckPlayer: View {
     let transport: [BankKey]?
 
     @Environment(Player.self) private var player
+    @Environment(Settings.self) private var settings
     @Environment(TapeLibrary.self) private var library
     @Environment(CaptionQueue.self) private var captions
 
@@ -22,13 +24,18 @@ struct DeckPlayer: View {
     var body: some View {
         let neighbours = FlagNeighbours(flags: tape.flags, positionMs: player.deckPositionMs)
         return VStack(spacing: 4) {
-            ScrubStrip(
-                durationMs: tape.durationMs,
-                positionMs: player.deckPositionMs,
-                flags: tape.flags,
-                onSeek: { player.seek(toMs: $0) },
-                onFlag: { player.jump(toFlag: $0) }
-            )
+            HStack(spacing: 8) {
+                ScrubStrip(
+                    durationMs: tape.durationMs,
+                    positionMs: player.deckPositionMs,
+                    flags: tape.flags,
+                    onSeek: { player.seek(toMs: $0) },
+                    onFlag: { player.jump(toFlag: $0) }
+                )
+                if settings.tapeWind {
+                    CueSwitch()
+                }
+            }
             HStack(alignment: .top, spacing: 8) {
                 VStack(spacing: 4) {
                     TimeWindow(

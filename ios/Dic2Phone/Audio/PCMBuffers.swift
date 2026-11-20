@@ -61,6 +61,23 @@ enum PCMBuffers {
         return status == kCMBlockBufferNoErr ? samples : []
     }
 
+    /// A buffer holding `samples` for a player node; nil if there are none or the format isn't
+    /// 32-bit float mono.
+    static func buffer(_ samples: [Float], format: AVAudioFormat) -> AVAudioPCMBuffer? {
+        guard !samples.isEmpty,
+              format.commonFormat == .pcmFormatFloat32,
+              format.channelCount == 1,
+              let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: AVAudioFrameCount(samples.count)),
+              let channels = buffer.floatChannelData else { return nil }
+        let count = min(samples.count, Int(buffer.frameCapacity))
+        samples.withUnsafeBufferPointer { source in
+            guard let base = source.baseAddress else { return }
+            channels[0].update(from: base, count: count)
+        }
+        buffer.frameLength = AVAudioFrameCount(count)
+        return buffer
+    }
+
     static func formatDescription() throws -> CMAudioFormatDescription {
         var description = AudioStreamBasicDescription(
             mSampleRate: Float64(TapeFormat.sampleRate),

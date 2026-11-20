@@ -24,7 +24,7 @@ struct PlayTab: View {
             ) { settings.skipSilence.toggle() }
             SetupToggle(
                 title: String(localized: "TAPE WIND"),
-                help: String(localized: "Hold REW / FF to wind the tape like a real deck, motor whirr and all (a tap still skips 10 s)."),
+                help: String(localized: "Hold REW / FF to wind the tape like a real deck, motor whirr and all (a tap still skips 10 s). Adds a CUE key to the deck: lit, you hear the tape as it winds."),
                 isOn: settings.tapeWind
             ) { settings.tapeWind.toggle() }
         }

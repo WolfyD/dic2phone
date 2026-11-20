@@ -40,7 +40,10 @@ final class AppModel {
         self.library = library
         self.feedback = feedback
         self.player = player
-        winder = DeckWinder(player: player, settings: settings, feedback: feedback)
+        winder = DeckWinder(
+            player: player, settings: settings, feedback: feedback,
+            library: library, cue: CuePlayer(audioSession: audioSession)
+        )
         self.audioSession = audioSession
         self.vaultStore = vaultStore
         self.captions = captions
