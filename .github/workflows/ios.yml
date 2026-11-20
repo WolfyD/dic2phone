@@ -41,17 +41,25 @@ jobs:
           xcodebuild -version
           xcodegen generate
 
+      # Runners carry simulators for several iOS versions; only those matching this Xcode's
+      # SDK can run the build. A plain "iPhone NN" is preferred for representative screenshots.
       - name: Pick an iPhone simulator
         id: simulator
-        working-directory: ios
         run: |
-          eligible=$(xcodebuild -showdestinations -project Dic2Phone.xcodeproj -scheme Dic2Phone \
-            | sed '/Ineligible destinations/q' | grep 'platform:iOS Simulator' | grep 'name:iPhone')
-          chosen=$(echo "$eligible" | grep -E 'name:iPhone [0-9]+ \}' | tail -1)
-          if [ -z "$chosen" ]; then chosen=$(echo "$eligible" | tail -1); fi
-          if [ -z "$chosen" ]; then echo "No iPhone simulator available"; exit 1; fi
-          echo "Using $chosen"
-          echo "id=$(echo "$chosen" | sed -E 's/.*id:([^,]+),.*/\1/')" >> "$GITHUB_OUTPUT"
+          sdk=$(xcrun --sdk iphonesimulator --show-sdk-version)
+          id=$(xcrun simctl list devices available --json | jq -r --arg runtime "iOS-${sdk%%.*}-" '
+            .devices | to_entries
+            | map(select(.key | contains($runtime))) | sort_by(.key) | reverse
+            | map(.value[] | select(.name | startswith("iPhone")))
+            | (map(select(.name | test("^iPhone [0-9]+$"))) + .)
+            | first | .udid // empty')
+          if [ -z "$id" ]; then
+            echo "No iPhone simulator for iOS $sdk. Available:"
+            xcrun simctl list devices available
+            exit 1
+          fi
+          xcrun simctl list devices | grep "$id"
+          echo "id=$id" >> "$GITHUB_OUTPUT"
 
       - name: Build and test
         working-directory: ios
