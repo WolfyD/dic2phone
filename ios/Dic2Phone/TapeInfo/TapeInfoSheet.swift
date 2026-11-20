@@ -90,10 +90,18 @@ struct TapeInfoSheet: View {
         ForEach(flags, id: \.self) { flag in
             TapeInfoField(
                 label: String(localized: "\(Glyph.flag) \(TapeNames.duration(ms: flag)) NOTE"),
-                text: draft.flagNotes[flag, default: ""],
+                text: note(at: flag, in: draft),
                 limit: TapeInfoDraft.flagNoteLimit,
                 learnsWords: learnsWords
             )
+        }
+    }
+
+    private func note(at flag: Int64, in draft: Binding<TapeInfoDraft>) -> Binding<String> {
+        Binding {
+            draft.wrappedValue.flagNotes[flag] ?? ""
+        } set: { note in
+            draft.wrappedValue.flagNotes[flag] = note
         }
     }
 
