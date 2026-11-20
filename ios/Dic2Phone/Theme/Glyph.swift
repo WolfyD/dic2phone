@@ -1,0 +1,22 @@
+/// Symbols printed on the deck. The variation selector (U+FE0E) after some of them keeps iOS
+/// from drawing them as colour emoji.
+enum Glyph {
+    static let rec = "●"
+    static let play = "▶\u{FE0E}"
+    static let pause = "❚❚"
+    static let rewind = "◀\u{FE0E}◀\u{FE0E}"
+    static let fastForward = "▶\u{FE0E}▶\u{FE0E}"
+    static let eject = "⏏\u{FE0E}"
+    static let flag = "⚑"
+    static let setup = "⚙\u{FE0E}"
+    static let warning = "⚠\u{FE0E}"
+    static let stop = "■"
+    static let check = "✔\u{FE0E}"
+    static let close = "✕"
+    static let sort = "↕\u{FE0E}"
+    static let back = "◀\u{FE0E}"
+    static let chosen = "●"
+    static let notChosen = "○"
+    static let folded = "▸"
+    static let unfolded = "▾"
+}

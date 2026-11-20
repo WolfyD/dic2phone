@@ -1,0 +1,96 @@
+name: Dic2Phone
+options:
+  bundleIdPrefix: com.dic2phone
+  deploymentTarget:
+    iOS: "18.0"
+  createIntermediateGroups: true
+  developmentLanguage: en
+
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    SWIFT_STRICT_CONCURRENCY: targeted
+    MARKETING_VERSION: "1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    TARGETED_DEVICE_FAMILY: "1"
+    ENABLE_USER_SCRIPT_SANDBOXING: YES
+    LOCALIZATION_PREFERS_STRING_CATALOGS: YES
+    SWIFT_EMIT_LOC_STRINGS: YES
+
+targets:
+  Dic2Phone:
+    type: application
+    platform: iOS
+    sources:
+      - path: Dic2Phone
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.dic2phone
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        GENERATE_INFOPLIST_FILE: NO
+    info:
+      path: Dic2Phone/Info.plist
+      properties:
+        CFBundleDisplayName: Dic2Phone
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        LSRequiresIPhoneOS: true
+        UILaunchScreen:
+          UIColorName: LaunchBackground
+        UIApplicationSupportsIndirectInputEvents: true
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        UIBackgroundModes:
+          - audio
+        UIFileSharingEnabled: true
+        LSSupportsOpeningDocumentsInPlace: true
+        ITSAppUsesNonExemptEncryption: false
+        NSMicrophoneUsageDescription: Dic2Phone records what the microphone hears onto tapes stored on this iPhone.
+        UIAppFonts:
+          - CourierPrime-Regular.ttf
+          - CourierPrime-Bold.ttf
+          - CourierPrime-Italic.ttf
+          - CourierPrime-BoldItalic.ttf
+          - Barlow-BlackItalic.ttf
+          - Barlow-Bold.ttf
+          - ReenieBeanie.ttf
+
+  Dic2PhoneTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: Dic2PhoneTests
+    dependencies:
+      - target: Dic2Phone
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.dic2phone.tests
+        GENERATE_INFOPLIST_FILE: YES
+
+  Dic2PhoneUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - path: Dic2PhoneUITests
+    dependencies:
+      - target: Dic2Phone
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.dic2phone.uitests
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_TARGET_NAME: Dic2Phone
+
+schemes:
+  Dic2Phone:
+    build:
+      targets:
+        Dic2Phone: all
+        Dic2PhoneTests: [test]
+        Dic2PhoneUITests: [test]
+    test:
+      gatherCoverageData: false
+      targets:
+        - Dic2PhoneTests
+        - Dic2PhoneUITests
