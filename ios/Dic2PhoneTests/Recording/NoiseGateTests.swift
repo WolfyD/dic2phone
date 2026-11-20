@@ -24,8 +24,8 @@ final class NoiseGateTests: XCTestCase {
     func testOpensOnSoundAndKeepsTheMomentBeforeIt() {
         var gate = NoiseGate(gated: true, sensitivity: 1)
         feedQuiet(&gate, chunks: 50, tapeHasAudio: false)
-        XCTAssertEqual(feedLoud(&gate), [], "A single loud chunk could be a click")
-        let opened = feedLoud(&gate)
+        XCTAssertEqual(feedLoud(&gate, tapeHasAudio: false), [], "A single loud chunk could be a click")
+        let opened = feedLoud(&gate, tapeHasAudio: false)
         let written = opened.map(\.count).reduce(0, +)
         XCTAssertTrue(gate.rolling)
         XCTAssertGreaterThanOrEqual(written, NoiseGate.preRoll)

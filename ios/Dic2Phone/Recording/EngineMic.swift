@@ -57,13 +57,17 @@ final class EngineMic: MicInput {
     }
 
     /// A headset plugged in or out reconfigures the engine and silently stops the input; end the
-    /// stream so the recorder closes the tape instead of waiting forever.
+    /// stream so the recorder closes the tape instead of waiting forever. The engine is matched
+    /// inside the loop because AVAudioEngine isn't Sendable and so can't be the observed object.
     private func watchForRouteChanges() {
-        let changes = NotificationCenter.default.notifications(named: .AVAudioEngineConfigurationChange, object: engine)
+        let changes = NotificationCenter.default.notifications(named: .AVAudioEngineConfigurationChange)
         routeWatch = Task { [weak self] in
-            for await _ in changes {
-                self?.stop()
-                return
+            for await change in changes {
+                guard let self else { return }
+                if change.object as AnyObject? === engine {
+                    stop()
+                    return
+                }
             }
         }
     }

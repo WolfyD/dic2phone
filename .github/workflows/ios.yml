@@ -74,6 +74,13 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             2>&1 | tee "$RUNNER_TEMP/xcodebuild.log"
 
+      - name: Show test failures
+        if: failure()
+        run: |
+          [ -d "$RUNNER_TEMP/Tests.xcresult" ] || exit 0
+          xcrun xcresulttool get test-results summary --path "$RUNNER_TEMP/Tests.xcresult" \
+            | jq -r '.testFailures[] | "\(.testIdentifierString): \(.failureText)"'
+
       - name: Export screenshots
         if: always()
         run: |

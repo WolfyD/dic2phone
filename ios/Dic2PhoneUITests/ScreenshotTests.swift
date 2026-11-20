@@ -4,6 +4,7 @@ import XCTest
 /// CI without a Mac or an iPhone.
 final class ScreenshotTests: XCTestCase {
     private static let setupTabs = ["LOOK", "REC", "PLAY", "MORE"]
+    private static let rotationTime: TimeInterval = 2
 
     override func setUpWithError() throws {
         continueAfterFailure = false
@@ -30,8 +31,16 @@ final class ScreenshotTests: XCTestCase {
         app.swipeUp()
         keepScreenshot("08-setup-more-end", of: app)
         backToDeck(in: app)
-        XCUIDevice.shared.orientation = .landscapeLeft
+        turnSideways()
         keepScreenshot("09-deck-landscape", of: app)
+    }
+
+    /// Screenshots don't wait for animations the way taps do, so without the pause the shot
+    /// catches the screen halfway through turning.
+    @MainActor
+    private func turnSideways() {
+        XCUIDevice.shared.orientation = .landscapeLeft
+        Thread.sleep(forTimeInterval: Self.rotationTime)
     }
 
     @MainActor
