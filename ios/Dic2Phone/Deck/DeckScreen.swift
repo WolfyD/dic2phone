@@ -187,7 +187,7 @@ struct DeckScreen: View {
         if recorder.state.recording {
             RecStatus(state: recorder.state)
         }
-        if let problem = recorder.state.error ?? library.problem ?? captionProblem {
+        if let problem = recorder.state.error ?? library.problem ?? captionProblem ?? tidyWarning {
             Text(verbatim: "\(Glyph.warning) \(problem)")
                 .font(DeckFont.mono.fixed(12))
                 .foregroundStyle(palette.accent)
@@ -198,6 +198,15 @@ struct DeckScreen: View {
 
     private var captionProblem: String? {
         captions.lastError.map { String(localized: "TRANSCRIBING FAILED: \($0)") }
+    }
+
+    private var tidyWarning: String? {
+        guard !recorder.state.recording else { return nil }
+        let now = Date.now
+        let dueSoon = AutoTidy(settings: settings, player: player).dueSoon(in: library.deck, now: now)
+        guard let first = dueSoon.values.min() else { return nil }
+        let when = AutoTidy.whenText(of: first, now: now)
+        return String(localized: "AUTO-TIDY: \(dueSoon.count) TAPES GO \(when) · TITLE OR FLAG TO KEEP")
     }
 
     /// With a tape in, its title; with none, the deck's own label.

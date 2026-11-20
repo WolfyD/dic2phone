@@ -9,6 +9,7 @@ struct TapeListScreen: View {
     @State private var model: TapeListModel
 
     @Environment(Player.self) private var player
+    @Environment(Settings.self) private var settings
     @Environment(\.palette) private var palette
 
     init(model: TapeListModel) {
@@ -96,7 +97,7 @@ struct TapeListScreen: View {
     private func subtitle(_ tapes: [Tape]) -> String {
         switch model.mode.rack {
         case .deck:
-            String(localized: "\(tapes.count) tapes · \(tapes.count(where: \.isNew)) new")
+            deckSubtitle(tapes)
         case .shelf:
             String(localized: "\(tapes.count) kept · Files › On My iPhone › Dic2Phone › Shelf")
         case .vault:
@@ -104,6 +105,12 @@ struct TapeListScreen: View {
                 ? String(localized: "locked · encrypted on this phone")
                 : String(localized: "\(tapes.count) locked away · open")
         }
+    }
+
+    private func deckSubtitle(_ tapes: [Tape]) -> String {
+        let counts = String(localized: "\(tapes.count) tapes · \(tapes.count(where: \.isNew)) new")
+        let tidyCount = tidySoon(tapes).count
+        return tidyCount == 0 ? counts : counts + " · " + String(localized: "✂ \(tidyCount) to be tidied")
     }
 
     private func hintRow(count: Int) -> some View {
@@ -152,11 +159,12 @@ struct TapeListScreen: View {
         let waiting = model.waitingForTranscripts
         switch model.mode.rack {
         case .deck:
+            let goingSoon = tidySoon(tapes)
             CarryCase {
                 ForEach(tapes) { tape in
                     TapeCaseRow(
                         tape: tape,
-                        state: rowState(of: tape, waiting: waiting),
+                        state: rowState(of: tape, waiting: waiting, tidySoon: goingSoon),
                         loadMode: model.mode == .load,
                         actions: rowActions(for: tape)
                     )
@@ -165,13 +173,13 @@ struct TapeListScreen: View {
         case .shelf, .vault:
             ShelfRack(material: model.mode.rack == .vault ? .steel : .wood) {
                 ForEach(tapes) { tape in
-                    ShelfSpineRow(tape: tape, state: rowState(of: tape, waiting: waiting), actions: rowActions(for: tape))
+                    ShelfSpineRow(tape: tape, state: rowState(of: tape, waiting: waiting, tidySoon: [:]), actions: rowActions(for: tape))
                 }
             }
         }
     }
 
-    private func rowState(of tape: Tape, waiting: Set<TapeID>) -> TapeRowState {
+    private func rowState(of tape: Tape, waiting: Set<TapeID>, tidySoon: [TapeID: Date]) -> TapeRowState {
         let playing = player.playingID == tape.id
         let progress = playing && tape.durationMs > 0 ? CGFloat(player.positionMs) / CGFloat(tape.durationMs) : 0
         return TapeRowState(
@@ -179,8 +187,15 @@ struct TapeListScreen: View {
             playing: playing,
             progress: progress,
             inDeck: player.loadedID == tape.id,
-            transcribing: waiting.contains(tape.id)
+            transcribing: waiting.contains(tape.id),
+            tidiedAt: tidySoon[tape.id]
         )
+    }
+
+    /// Deck tapes AUTO-TIDY deletes within its warning days.
+    private func tidySoon(_ tapes: [Tape]) -> [TapeID: Date] {
+        guard model.mode.rack == .deck else { return [:] }
+        return AutoTidy(settings: settings, player: player).dueSoon(in: tapes, now: .now)
     }
 
     private func rowActions(for tape: Tape) -> TapeRowActions {

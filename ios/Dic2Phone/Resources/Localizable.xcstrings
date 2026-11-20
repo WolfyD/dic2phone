@@ -55,6 +55,60 @@
         }
       }
     },
+    "AUTO-TIDY: %lld TAPES GO %@ · TITLE OR FLAG TO KEEP" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AUTO-TIDY: %#@tapes@ %2$@ · TITLE OR FLAG TO KEEP"
+          },
+          "substitutions" : {
+            "tapes" : {
+              "argNum" : 1,
+              "formatSpecifier" : "lld",
+              "variations" : {
+                "plural" : {
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg TAPE GOES"
+                    }
+                  },
+                  "other" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg TAPES GO"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "IN %lld DAYS" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "IN %lld DAY"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "IN %lld DAYS"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "All %lld tapes on the deck will be deleted. Tapes on the shelf are kept." : {
       "localizations" : {
         "en" : {

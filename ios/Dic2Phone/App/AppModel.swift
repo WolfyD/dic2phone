@@ -65,6 +65,7 @@ final class AppModel {
         _ = await rescue.rescue(leftovers)
         await vaultStore.clearUnsealed()
         await library.reload()
+        await tidyTapes()
     }
 
     /// A call or an alarm takes the audio away: stop cleanly, so the tape so far is saved,
@@ -78,11 +79,22 @@ final class AppModel {
     }
 
     /// Tapes can arrive or leave through the Files app while Dic2Phone is away, the passcode can
-    /// change, and tapes recorded in a locked phone can now be read.
+    /// change, tapes recorded in a locked phone can now be read, and days pass for AUTO-TIDY.
     func appBecameActive() {
         vault.checkPasscode()
         newTapeCaptions.appBecameActive()
-        Task { await library.reload() }
+        Task {
+            await library.reload()
+            await tidyTapes()
+        }
+    }
+
+    /// Never mid-recording, when the deck is busy with the tape being made.
+    private func tidyTapes() async {
+        guard !recorder.state.recording else { return }
+        let overdue = AutoTidy(settings: settings, player: player).overdue(in: library.deck, now: .now)
+        guard !overdue.isEmpty else { return }
+        _ = await library.delete(overdue)
     }
 
     /// Clicks are silent while recording: they would end up on the tape.

@@ -49,6 +49,7 @@ struct SetupScreen: View {
         case .text: TextTab()
         case .more:
             VStack(spacing: 10) {
+                TidyPanel()
                 AboutPanel()
                 CreditsPanel()
             }

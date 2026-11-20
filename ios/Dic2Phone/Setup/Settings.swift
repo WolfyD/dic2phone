@@ -23,6 +23,8 @@ final class Settings {
     var skipSilence: Bool { didSet { defaults.set(skipSilence, forKey: Key.skipSilence) } }
     var tapeWind: Bool { didSet { defaults.set(tapeWind, forKey: Key.tapeWind) } }
     var windCue: Bool { didSet { defaults.set(windCue, forKey: Key.windCue) } }
+    /// AUTO-TIDY's days, one of `AutoTidy.choices`; 0 is off.
+    var tidyDays: Int { didSet { defaults.set(tidyDays, forKey: Key.tidyDays) } }
     var deckSort: TapeSort { didSet { defaults.set(deckSort.rawValue, forKey: Key.deckSort) } }
     var shelfSort: TapeSort { didSet { defaults.set(shelfSort.rawValue, forKey: Key.shelfSort) } }
     var vaultSort: TapeSort { didSet { defaults.set(vaultSort.rawValue, forKey: Key.vaultSort) } }
@@ -50,6 +52,8 @@ final class Settings {
         skipSilence = defaults.bool(forKey: Key.skipSilence)
         tapeWind = defaults.bool(forKey: Key.tapeWind)
         windCue = defaults.bool(forKey: Key.windCue)
+        let storedTidyDays = defaults.integer(forKey: Key.tidyDays)
+        tidyDays = AutoTidy.choices.contains(storedTidyDays) ? storedTidyDays : 0
         deckSort = TapeSort(rawValue: defaults.string(forKey: Key.deckSort) ?? "") ?? .newest
         shelfSort = TapeSort(rawValue: defaults.string(forKey: Key.shelfSort) ?? "") ?? .newest
         vaultSort = TapeSort(rawValue: defaults.string(forKey: Key.vaultSort) ?? "") ?? .newest
@@ -109,6 +113,7 @@ final class Settings {
         static let skipSilence = "skip_silence"
         static let tapeWind = "tape_wind"
         static let windCue = "wind_cue"
+        static let tidyDays = "tidy_days"
         static let deckSort = "sort_deck"
         static let shelfSort = "sort_shelf"
         static let vaultSort = "sort_vault"

@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// A small coloured tag on a tape: NEW, IN DECK.
+/// A small coloured tag on a tape: NEW, IN DECK, ✂ TOMORROW.
 struct TapeBadge: View {
     let text: String
     let foreground: Color
