@@ -45,8 +45,7 @@ enum TapeFacts {
 
     /// The place name over its coordinates; tapping it opens Maps.
     private static func place(_ fix: LocationFix, name: String) -> TapeFact {
-        let label = name.isEmpty ? fix.coordinates : name + "
-" + fix.coordinates
+        let label = name.isEmpty ? fix.coordinates : name + "\n" + fix.coordinates
         let accuracy = fix.accuracyM.map { "  ±" + $0.formatted(.number.precision(.fractionLength(0)).grouping(.never)) + " m" } ?? ""
         return TapeFact(
             name: String(localized: "PLACE"),

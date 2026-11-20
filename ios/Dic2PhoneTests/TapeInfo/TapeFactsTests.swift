@@ -33,8 +33,7 @@ final class TapeFactsTests: XCTestCase {
         meta.location = LocationFix(latitude: 47.50213, longitude: -19.064, accuracyM: 12.4)
         meta.place = "Budapest, HU"
         let place = try XCTUnwrap(TapeFacts.of(tape, meta: meta).first { $0.name == "PLACE" })
-        XCTAssertEqual(place.value, "Budapest, HU
-47.50213° N, 19.06400° W  ±12 m")
+        XCTAssertEqual(place.value, "Budapest, HU\n47.50213° N, 19.06400° W  ±12 m")
         XCTAssertEqual(place.link?.host(), "maps.apple.com")
     }
 
