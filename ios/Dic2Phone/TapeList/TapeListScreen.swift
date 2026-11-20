@@ -70,6 +70,9 @@ struct TapeListScreen: View {
             ShareSheet(items: model.sharing?.files ?? [], onFinish: model.finishSharing)
                 .presentationDetents([.medium, .large])
         }
+        .sheet(item: $model.info, onDismiss: model.clearSelection) { tape in
+            TapeInfoSheet(tape: tape) { model.info = nil }
+        }
     }
 
     private func header(_ tapes: [Tape]) -> some View {

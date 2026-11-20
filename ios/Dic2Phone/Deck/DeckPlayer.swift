@@ -1,8 +1,8 @@
 import SwiftUI
 
 /// The deck as a player for the tape that's in: the position strip with its flags, the play
-/// time, the captions, the compartment of less-used keys, and the transport keys unless they sit
-/// elsewhere.
+/// time, the captions, the compartment of less-used keys and the tape's info, and the transport
+/// keys unless they sit elsewhere.
 struct DeckPlayer: View {
     private static let compartmentKeyHeight: CGFloat = 38
 
@@ -15,6 +15,7 @@ struct DeckPlayer: View {
     @Environment(CaptionQueue.self) private var captions
 
     @State private var transcribing: [Tape]?
+    @State private var showingInfo = false
 
     var body: some View {
         VStack(spacing: 4) {
@@ -38,6 +39,9 @@ struct DeckPlayer: View {
             }
         }
         .transcribeRequest($transcribing)
+        .sheet(isPresented: $showingInfo) {
+            TapeInfoSheet(tape: tape) { showingInfo = false }
+        }
     }
 
     private var compartment: some View {
@@ -53,6 +57,8 @@ struct DeckPlayer: View {
                 }
                 .layoutWeight(1.8)
             }
+            DeckKey(label: String(localized: "INFO"), height: Self.compartmentKeyHeight) { showingInfo = true }
+                .layoutWeight(1.1)
         }
     }
 

@@ -54,6 +54,8 @@ struct TapeListKeys: View {
             if selection.count == 1, let tape = selection.first {
                 KeyRow {
                     DeckKey(label: String(localized: "\(Glyph.eject) PUT IN DECK")) { model.putInDeck(tape) }
+                        .layoutWeight(2)
+                    DeckKey(label: String(localized: "INFO")) { model.info = tape }
                 }
             }
             KeyRow {

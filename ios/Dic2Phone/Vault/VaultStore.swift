@@ -123,6 +123,12 @@ actor VaultStore {
     }
 
     /// Nil while the vault is locked, or if the tape has no captions yet.
+    /// Nil while the vault is locked.
+    func meta(of id: TapeID) -> TapeMeta? {
+        guard let key, let entry = try? entry(for: id, key: key) else { return nil }
+        return readMeta(entry.name, key: key)
+    }
+
     func transcript(of id: TapeID) -> Transcript? {
         guard let key, let entry = try? entry(for: id, key: key) else { return nil }
         return readTranscript(entry.name, key: key)

@@ -162,6 +162,16 @@ final class TapeLibrary {
         return takenOut
     }
 
+    /// Everything known about the tape; nil for a vault tape while the vault is locked.
+    func meta(of tape: Tape) async -> TapeMeta? {
+        tape.rack == .vault ? await vaultStore.meta(of: tape.id) : await store.meta(for: tape.id)
+    }
+
+    /// - Returns: whether it was saved.
+    func saveInfo(_ draft: TapeInfoDraft, of tape: Tape) async -> Bool {
+        await updateMeta(of: tape) { draft.apply(to: &$0) }
+    }
+
     func setTitle(_ title: String, of tape: Tape) async {
         let trimmed = String(title.trimmingCharacters(in: .whitespacesAndNewlines).prefix(TapeMeta.titleLimit))
         await updateMeta(of: tape) { $0.title = trimmed }
@@ -178,17 +188,22 @@ final class TapeLibrary {
         await updateMeta(of: tape) { $0.flags.removeAll { $0 == ms } }
     }
 
-    private func updateMeta(of tape: Tape, _ change: @escaping @Sendable (inout TapeMeta) -> Void) async {
+    @discardableResult
+    private func updateMeta(of tape: Tape, _ change: @escaping @Sendable (inout TapeMeta) -> Void) async -> Bool {
         problem = nil
+        let saved: Bool
         do {
             if tape.rack == .vault {
                 try await vaultStore.updateMeta(of: tape.id, change)
             } else {
                 try await store.updateMeta(of: tape.id, change)
             }
+            saved = true
         } catch {
             problem = String(localized: "Couldn't save")
+            saved = false
         }
         await reload()
+        return saved
     }
 }

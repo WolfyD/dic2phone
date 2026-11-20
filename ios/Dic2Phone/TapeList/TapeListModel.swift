@@ -18,6 +18,8 @@ final class TapeListModel {
     private(set) var reading: TranscriptModel?
     /// Tapes to transcribe, once a speech model has been picked if none has.
     var transcribing: [Tape]?
+    /// The tape whose TAPE INFO is open.
+    var info: Tape?
 
     @ObservationIgnored private let settings: Settings
     @ObservationIgnored private let library: TapeLibrary
