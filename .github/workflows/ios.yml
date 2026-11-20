@@ -3,9 +3,9 @@ name: iOS
 on:
   push:
     branches: [main, ios-port]
-    paths: ["ios/**", ".github/workflows/ios.yml"]
+    paths: ["ios/**", "app/src/main/cpp/whisper.cpp/**", ".github/workflows/ios.yml"]
   pull_request:
-    paths: ["ios/**", ".github/workflows/ios.yml"]
+    paths: ["ios/**", "app/src/main/cpp/whisper.cpp/**", ".github/workflows/ios.yml"]
   workflow_dispatch:
 
 permissions:
@@ -34,6 +34,17 @@ jobs:
           echo "$XCODEGEN_SHA256  $RUNNER_TEMP/xcodegen.zip" | shasum -a 256 --check
           unzip -q "$RUNNER_TEMP/xcodegen.zip" -d "$RUNNER_TEMP"
           echo "$RUNNER_TEMP/xcodegen/bin" >> "$GITHUB_PATH"
+
+      - name: Restore whisper.cpp for iOS
+        id: whisper
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ios/Vendor/WhisperCpp.xcframework
+          key: whisper-ios-${{ hashFiles('app/src/main/cpp/whisper.cpp/**', 'ios/scripts/build-whisper.sh') }}
+
+      - name: Build whisper.cpp for iOS
+        if: steps.whisper.outputs.cache-hit != 'true'
+        run: bash ios/scripts/build-whisper.sh
 
       - name: Generate the Xcode project
         working-directory: ios

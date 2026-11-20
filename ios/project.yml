@@ -23,6 +23,11 @@ targets:
     platform: iOS
     sources:
       - path: Dic2Phone
+    dependencies:
+      - framework: Vendor/WhisperCpp.xcframework
+        embed: false
+      - sdk: Accelerate.framework
+      - sdk: libc++.tbd
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.dic2phone
