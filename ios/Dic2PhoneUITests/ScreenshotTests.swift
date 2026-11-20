@@ -16,27 +16,27 @@ final class ScreenshotTests: XCTestCase {
         let app = XCUIApplication()
         app.launch()
 
-        keepScreenshot("01-deck", of: app)
+        keepScreenshot("01-deck")
         press("TAPES", in: app)
-        keepScreenshot("02-tapes", of: app)
+        keepScreenshot("02-tapes")
         backToDeck(in: app)
         press("SHELF", in: app)
-        keepScreenshot("03-shelf", of: app)
+        keepScreenshot("03-shelf")
         backToDeck(in: app)
         press("SETUP", in: app)
         for (index, tab) in Self.setupTabs.enumerated() {
             press(tab, in: app)
-            keepScreenshot("0\(index + 4)-setup-\(tab.lowercased())", of: app)
+            keepScreenshot("0\(index + 4)-setup-\(tab.lowercased())")
         }
         app.swipeUp()
-        keepScreenshot("08-setup-more-end", of: app)
+        keepScreenshot("08-setup-more-end")
         backToDeck(in: app)
         turnSideways()
-        keepScreenshot("09-deck-landscape", of: app)
+        keepScreenshot("09-deck-landscape")
     }
 
     /// Screenshots don't wait for animations the way taps do, so without the pause the shot
-    /// catches the screen halfway through turning.
+    /// may catch the screen halfway through turning.
     @MainActor
     private func turnSideways() {
         XCUIDevice.shared.orientation = .landscapeLeft
@@ -58,9 +58,11 @@ final class ScreenshotTests: XCTestCase {
         back.tap()
     }
 
+    /// The whole screen rather than `app.screenshot()`, which crops a sideways app to a
+    /// portrait-shaped window.
     @MainActor
-    private func keepScreenshot(_ name: String, of app: XCUIApplication) {
-        let screenshot = XCTAttachment(screenshot: app.screenshot())
+    private func keepScreenshot(_ name: String) {
+        let screenshot = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
         screenshot.name = name
         screenshot.lifetime = .keepAlways
         add(screenshot)
