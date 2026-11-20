@@ -124,7 +124,7 @@ final class Player {
     /// Tapes moving into, out of or within the vault: they're stopped and taken out of the deck,
     /// so nothing keeps playing a vault tape once it's locked, or a file that has moved.
     func letGo(of tapes: [Tape]) {
-        let ids = Set(tapes.map(.id))
+        let ids = Set(tapes.map(\.id))
         if let playingID, ids.contains(playingID) { stop() }
         guard let loadedID, ids.contains(loadedID) else { return }
         self.loadedID = nil
