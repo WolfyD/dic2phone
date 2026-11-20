@@ -15,6 +15,11 @@ struct LabelWritingAlert: ViewModifier {
 
     @State private var draft = ""
 
+    /// The title for writing on what's in the deck, or on a tape's label.
+    static func labelTitle(minidisc: Bool) -> String {
+        minidisc ? String(localized: "TITLE THE DISC") : String(localized: "WRITE ON THE LABEL")
+    }
+
     func body(content: Content) -> some View {
         content
             .alert(Text(verbatim: title), isPresented: $isPresented) {
@@ -38,7 +43,7 @@ struct LabelWritingAlert: ViewModifier {
 extension View {
     func labelWritingAlert(
         isPresented: Binding<Bool>,
-        title: String = String(localized: "WRITE ON THE LABEL"),
+        title: String,
         original: String,
         placeholder: String,
         limit: Int,

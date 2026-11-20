@@ -35,6 +35,7 @@ struct DeckScreen: View {
         }
         .labelWritingAlert(
             isPresented: $writingLabel,
+            title: LabelWritingAlert.labelTitle(minidisc: settings.minidisc),
             original: settings.tapeLabel,
             placeholder: String(localized: "e.g. NOTES or MIXTAPE '89"),
             limit: Settings.labelLimit,
@@ -43,6 +44,7 @@ struct DeckScreen: View {
         )
         .labelWritingAlert(
             isPresented: Binding { titling != nil } set: { if !$0 { titling = nil } },
+            title: LabelWritingAlert.labelTitle(minidisc: settings.minidisc),
             original: titling?.title ?? "",
             placeholder: titling.map { TapeNames.pretty($0.id) } ?? "",
             limit: TapeMeta.titleLimit,
@@ -64,7 +66,7 @@ struct DeckScreen: View {
     private var keys: DeckKeys {
         DeckKeys(
             recorder: recorder, player: player, winder: winder, flagKey: flagKey,
-            palette: palette, keyClick: keyClick, navigate: navigate
+            minidisc: settings.minidisc, palette: palette, keyClick: keyClick, navigate: navigate
         )
     }
 
@@ -145,7 +147,7 @@ struct DeckScreen: View {
     }
 
     private func cassette(elapsedMs: Int64) -> some View {
-        CassetteView(
+        CartridgeView(
             label: cassetteLabel,
             spinning: recorder.state.tapeMoving || player.deckPlaying || winder.isWinding,
             progress: cassetteProgress(elapsedMs: elapsedMs),
@@ -168,7 +170,7 @@ struct DeckScreen: View {
         if let tape = inDeck {
             return .inDeck(tape, positionMs: player.deckPositionMs, playing: player.deckPlaying)
         }
-        return .empty(userLabel: settings.tapeLabel, recording: recorder.state.recording, last: library.lastTape)
+        return .empty(userLabel: settings.tapeLabel, recording: recorder.state.recording, last: library.lastTape, disc: settings.minidisc)
     }
 
     private func cassetteProgress(elapsedMs: Int64) -> CGFloat {

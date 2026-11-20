@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// A small preview of a theme: its backdrop with a cassette in its colours. Tapping it loads it.
+/// A small preview of a theme: its backdrop with a cassette or disc in its colours. Tapping it loads it.
 struct ThemeCard: View {
     let theme: Palette
     let loaded: Bool
@@ -22,7 +22,7 @@ struct ThemeCard: View {
 
     private var preview: some View {
         VStack(spacing: 6) {
-            CassetteView(label: CassetteLabel(title: "", subtitle: "", handwritten: false), spinning: false, progress: 0.3, typed: false)
+            CartridgeView(label: CassetteLabel(title: "", subtitle: "", handwritten: false), spinning: false, progress: 0.3, typed: false)
             LabelStripes()
                 .frame(width: 48, height: 3)
             Text(verbatim: theme.name)

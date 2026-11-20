@@ -38,7 +38,7 @@ struct CassetteArt {
         let paper = CGRect(x: w * 0.07, y: h * 0.07, width: w * 0.86, height: h * 0.64)
         context.fill(Path(roundedRect: paper, cornerRadius: w * 0.015), with: .color(palette.label))
         let band = CGRect(x: paper.minX, y: paper.minY + paper.height * 0.40, width: paper.width, height: paper.height * 0.52)
-        drawStripes(in: context, band: band)
+        context.fillStripes(palette.stripes, in: band)
 
         let side = ArtText("A", font: .badge, size: h * 0.16, color: palette.ink, in: context)
         side.draw(in: context, x: paper.minX + paper.width * 0.025, baseline: paper.minY + paper.height * 0.01 + side.ascent)
@@ -48,8 +48,7 @@ struct CassetteArt {
         let titleLine = RuledLine(x: textX, y: paper.minY + paper.height * 0.22, width: textWidth)
         let subtitleLine = RuledLine(x: textX, y: paper.minY + paper.height * 0.36, width: textWidth)
         for line in [titleLine, subtitleLine] {
-            let rule = Path.line(from: CGPoint(x: line.x, y: line.y), to: CGPoint(x: line.x + line.width, y: line.y))
-            context.stroke(rule, with: .color(palette.ink.opacity(0.35)), lineWidth: w * 0.0015)
+            line.draw(in: context, color: palette.ink.opacity(0.35), lineWidth: w * 0.0015)
         }
         drawTitle(in: context, on: titleLine, size: size)
         let subtitle = ArtText.ellipsized(
@@ -57,15 +56,6 @@ struct CassetteArt {
         )
         subtitle.draw(in: context, x: textX, baseline: subtitleLine.y - subtitle.descent - w * 0.001)
         return band
-    }
-
-    private func drawStripes(in context: GraphicsContext, band: CGRect) {
-        let stripeHeight = band.height / CGFloat(palette.stripes.count)
-        for (index, color) in palette.stripes.enumerated() {
-            // Overlapping by half a point leaves no hairline gaps between the stripes.
-            let stripe = CGRect(x: band.minX, y: band.minY + CGFloat(index) * stripeHeight, width: band.width, height: stripeHeight + 0.5)
-            context.fill(Path(stripe), with: .color(color))
-        }
     }
 
     private func drawTitle(in context: GraphicsContext, on line: RuledLine, size: CGSize) {

@@ -20,27 +20,32 @@ final class CassetteLabelTests: XCTestCase {
     }
 
     func testAnEmptyDeckWithNothingWrittenIsBlank() {
-        let label = CassetteLabel.empty(userLabel: "", recording: false, last: nil)
+        let label = CassetteLabel.empty(userLabel: "", recording: false, last: nil, disc: false)
         XCTAssertEqual(label.title, "")
         XCTAssertFalse(label.handwritten)
     }
 
     func testABlankLabelShowsTheRecording() {
-        let label = CassetteLabel.empty(userLabel: "   ", recording: true, last: nil)
+        let label = CassetteLabel.empty(userLabel: "   ", recording: true, last: nil, disc: false)
         XCTAssertEqual(label.title, "RECORDING…")
         XCTAssertFalse(label.handwritten)
     }
 
     func testTheUsersWritingStaysOnTheEmptyDeck() {
-        let label = CassetteLabel.empty(userLabel: "Lectures", recording: false, last: untitled)
+        let label = CassetteLabel.empty(userLabel: "Lectures", recording: false, last: untitled, disc: false)
         XCTAssertEqual(label.title, "Lectures")
         XCTAssertTrue(label.handwritten)
         XCTAssertTrue(label.subtitle.hasSuffix("1:00 · NEW"))
     }
 
     func testTheSampleShowsTheUsersWritingOrAnExample() {
-        XCTAssertEqual(CassetteLabel.sample(userLabel: "").title, "My first tape")
-        XCTAssertEqual(CassetteLabel.sample(userLabel: "Lectures").title, "Lectures")
-        XCTAssertTrue(CassetteLabel.sample(userLabel: "").handwritten)
+        XCTAssertEqual(CassetteLabel.sample(userLabel: "", disc: false).title, "My first tape")
+        XCTAssertEqual(CassetteLabel.sample(userLabel: "Lectures", disc: false).title, "Lectures")
+        XCTAssertTrue(CassetteLabel.sample(userLabel: "", disc: false).handwritten)
+    }
+
+    func testTheBlankLabelSaysWhatIsInTheDeck() {
+        XCTAssertEqual(CassetteLabel.empty(userLabel: "", recording: false, last: nil, disc: true).subtitle, "MD 74 · SP · STEREO")
+        XCTAssertEqual(CassetteLabel.sample(userLabel: "", disc: false).subtitle, "C-60 · TYPE I · NORMAL")
     }
 }

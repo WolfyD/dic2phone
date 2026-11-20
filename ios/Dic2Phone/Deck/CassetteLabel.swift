@@ -3,7 +3,10 @@ import Foundation
 /// What's on the cassette's label: a big line, a small line under it, and whether the big line
 /// is the user's own writing (drawn in their pen) or printed.
 struct CassetteLabel: Equatable {
-    private static var stock: String { String(localized: "C-60 · TYPE I · NORMAL") }
+    /// What's printed on a blank one.
+    private static func stock(disc: Bool) -> String {
+        disc ? String(localized: "MD 74 · SP · STEREO") : String(localized: "C-60 · TYPE I · NORMAL")
+    }
 
     var title: String
     var subtitle: String
@@ -32,26 +35,26 @@ struct CassetteLabel: Equatable {
     }
 
     /// Setup's example of how the user's writing looks.
-    static func sample(userLabel: String) -> CassetteLabel {
+    static func sample(userLabel: String, disc: Bool) -> CassetteLabel {
         CassetteLabel(
             title: userLabel.isEmpty ? String(localized: "My first tape") : userLabel,
-            subtitle: stock,
+            subtitle: stock(disc: disc),
             handwritten: true
         )
     }
 
     /// The deck's own label with no tape in: the user's writing, if any, stays on the big line;
     /// the rest tells what the deck is doing or what the last tape was.
-    static func empty(userLabel: String, recording: Bool, last: Tape?) -> CassetteLabel {
+    static func empty(userLabel: String, recording: Bool, last: Tape?, disc: Bool) -> CassetteLabel {
         let written = !userLabel.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         if written {
-            return CassetteLabel(title: userLabel, subtitle: activity(recording: recording, last: last), handwritten: true)
+            return CassetteLabel(title: userLabel, subtitle: activity(recording: recording, last: last, disc: disc), handwritten: true)
         }
         if recording {
-            return CassetteLabel(title: String(localized: "RECORDING…"), subtitle: stock, handwritten: false)
+            return CassetteLabel(title: String(localized: "RECORDING…"), subtitle: stock(disc: disc), handwritten: false)
         }
         guard let last else {
-            return CassetteLabel(title: "", subtitle: stock, handwritten: false)
+            return CassetteLabel(title: "", subtitle: stock(disc: disc), handwritten: false)
         }
         return CassetteLabel(
             title: TapeNames.pretty(last.id),
@@ -60,9 +63,9 @@ struct CassetteLabel: Equatable {
         )
     }
 
-    private static func activity(recording: Bool, last: Tape?) -> String {
+    private static func activity(recording: Bool, last: Tape?, disc: Bool) -> String {
         if recording { return String(localized: "\(Glyph.rec) RECORDING…") }
-        guard let last else { return stock }
+        guard let last else { return stock(disc: disc) }
         return String(localized: "LAST \(TapeNames.pretty(last.id)) · \(summary(of: last))")
     }
 

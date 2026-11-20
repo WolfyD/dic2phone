@@ -2,6 +2,7 @@ import SwiftUI
 
 /// The maker's badge across the top of the deck.
 struct BrandPlate: View {
+    @Environment(Settings.self) private var settings
     @Environment(\.palette) private var palette
 
     var body: some View {
@@ -20,7 +21,7 @@ struct BrandPlate: View {
                     .padding(.horizontal, 12)
                 stripes(palette.stripes.reversed())
             }
-            Text(verbatim: "STEREO CASSETTE RECORDER  DX-2")
+            Text(verbatim: settings.minidisc ? "STEREO MINIDISC RECORDER  DX-2" : "STEREO CASSETTE RECORDER  DX-2")
                 .font(DeckFont.mono.fixed(10))
                 .tracking(1)
                 .foregroundStyle(palette.dim)

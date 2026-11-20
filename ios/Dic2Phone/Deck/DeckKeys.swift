@@ -8,6 +8,7 @@ struct DeckKeys {
     let player: Player
     let winder: DeckWinder
     let flagKey: FlagKey
+    let minidisc: Bool
     let palette: Palette
     let keyClick: KeyClick
     let navigate: (Screen) -> Void
@@ -31,7 +32,7 @@ struct DeckKeys {
             ))
         }
         keys += [
-            BankKey(id: "tapes", label: String(localized: "TAPES"), face: .icon(.tapes), action: .tap { navigate(.tapes) }),
+            BankKey(id: "tapes", label: String(localized: "TAPES"), face: .icon(minidisc ? .discs : .tapes), action: .tap { navigate(.tapes) }),
             BankKey(id: "shelf", label: String(localized: "SHELF"), face: .icon(.shelf), action: .tap { navigate(.shelf) }),
             BankKey(id: "setup", label: String(localized: "SETUP"), face: .glyph(Glyph.setup), action: .tap { navigate(.setup(.look)) }),
         ]

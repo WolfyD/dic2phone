@@ -14,7 +14,7 @@ struct NowPlaying: View {
         let transcript = library.transcripts[tape.id]
         VStack(spacing: 6) {
             HStack(spacing: 10) {
-                CassetteView(
+                CartridgeView(
                     label: .playing(tape, positionMs: player.positionMs),
                     spinning: true,
                     progress: progress,
