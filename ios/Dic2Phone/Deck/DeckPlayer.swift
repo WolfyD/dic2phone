@@ -1,10 +1,11 @@
 import SwiftUI
 
 /// The deck as a player for the tape that's in: the position strip with its flags, the play
-/// time and the note on the flag just passed, the captions, the compartment of less-used keys
+/// time and the note on the flag just passed beside the varispeed, the captions, the compartment of less-used keys
 /// and the tape's info, and the transport keys unless they sit elsewhere.
 struct DeckPlayer: View {
     private static let compartmentKeyHeight: CGFloat = 38
+    private static let faderWidth: CGFloat = 150
 
     let tape: Tape
     /// Nil when the keys are in the deck's own key row instead, as in landscape.
@@ -28,14 +29,20 @@ struct DeckPlayer: View {
                 onSeek: { player.seek(toMs: $0) },
                 onFlag: { player.jump(toFlag: $0) }
             )
-            TimeWindow(
-                positionMs: player.deckPositionMs,
-                durationMs: tape.durationMs,
-                flags: tape.flags.count,
-                playing: player.deckPlaying
-            )
-            FlagNoteLine(flag: neighbours.passed, note: neighbours.passed.flatMap { tape.flagNotes[$0] } ?? "") {
-                noting = neighbours.passed
+            HStack(alignment: .top, spacing: 8) {
+                VStack(spacing: 4) {
+                    TimeWindow(
+                        positionMs: player.deckPositionMs,
+                        durationMs: tape.durationMs,
+                        flags: tape.flags.count,
+                        playing: player.deckPlaying
+                    )
+                    FlagNoteLine(flag: neighbours.passed, note: neighbours.passed.flatMap { tape.flagNotes[$0] } ?? "") {
+                        noting = neighbours.passed
+                    }
+                }
+                VarispeedFader()
+                    .frame(width: Self.faderWidth)
             }
             DeckCaptions(tape: tape)
             compartment(neighbours)
