@@ -10,7 +10,8 @@ extension Tape {
             sizeBytes: 0,
             isNew: isNew,
             title: title,
-            flags: []
+            flags: [],
+            hasCaptions: false
         )
     }
 }

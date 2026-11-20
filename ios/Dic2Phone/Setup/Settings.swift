@@ -26,6 +26,10 @@ final class Settings {
     var deckTape: TapeID? { didSet { defaults.set(deckTape?.fileName ?? "", forKey: Key.deckTape) } }
     var minidisc: Bool { didSet { defaults.set(minidisc, forKey: Key.minidisc) } }
     var labelTyped: Bool { didSet { defaults.set(labelTyped, forKey: Key.labelTyped) } }
+    /// Nil until one is picked: the first request for captions asks which.
+    var speechModel: SpeechModel? { didSet { defaults.set(speechModel?.rawValue ?? "", forKey: Key.speechModel) } }
+    var captionLanguage: String { didSet { defaults.set(captionLanguage, forKey: Key.captionLanguage) } }
+    var autoCaptions: AutoCaptions { didSet { defaults.set(autoCaptions.rawValue, forKey: Key.autoCaptions) } }
     private(set) var tapeLabel: String
 
     init(defaults: UserDefaults) {
@@ -46,6 +50,10 @@ final class Settings {
         deckTape = defaults.string(forKey: Key.deckTape).flatMap(TapeID.init)
         minidisc = defaults.bool(forKey: Key.minidisc)
         labelTyped = defaults.bool(forKey: Key.labelTyped)
+        speechModel = SpeechModel(rawValue: defaults.string(forKey: Key.speechModel) ?? "")
+        let storedLanguage = defaults.string(forKey: Key.captionLanguage) ?? ""
+        captionLanguage = CaptionLanguage.codes.contains(storedLanguage) ? storedLanguage : CaptionLanguage.automatic
+        autoCaptions = AutoCaptions(rawValue: defaults.integer(forKey: Key.autoCaptions)) ?? .off
         tapeLabel = defaults.string(forKey: Key.tapeLabel) ?? ""
     }
 
@@ -99,6 +107,9 @@ final class Settings {
         static let tapeLabel = "tape_label"
         static let minidisc = "minidisc"
         static let labelTyped = "label_typed"
+        static let speechModel = "cc_model"
+        static let captionLanguage = "cc_lang"
+        static let autoCaptions = "auto_cc"
         static let maxTapeSeconds = "debug_max_tape_s"
     }
 }

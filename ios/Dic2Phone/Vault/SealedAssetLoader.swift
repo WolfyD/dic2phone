@@ -18,10 +18,15 @@ final class SealedAssetLoader: NSObject, AVAssetResourceLoaderDelegate, Sendable
     /// An item that reads through this loader. The asset holds its loader weakly, so whoever
     /// plays the item must keep the loader too.
     func makeItem() -> AVPlayerItem? {
+        makeAsset().map { AVPlayerItem(asset: $0) }
+    }
+
+    /// An asset that reads through this loader, which whoever uses it must keep.
+    func makeAsset() -> AVURLAsset? {
         guard let url = URL(string: "\(Self.scheme)://tape") else { return nil }
         let asset = AVURLAsset(url: url)
         asset.resourceLoader.setDelegate(self, queue: queue)
-        return AVPlayerItem(asset: asset)
+        return asset
     }
 
     func resourceLoader(

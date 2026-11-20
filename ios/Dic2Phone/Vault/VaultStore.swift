@@ -55,7 +55,8 @@ actor VaultStore {
                 sizeBytes: entry.sizeBytes,
                 isNew: false,
                 title: meta.title,
-                flags: meta.flags
+                flags: meta.flags,
+                hasCaptions: FileManager.default.fileExists(atPath: storage.sealedCaptionsURL(entry.name).path(percentEncoded: false))
             )
             return SealedTape(tape: tape, file: SealedFile(url: storage.sealedTapeURL(entry.name), key: key))
         }
@@ -67,7 +68,8 @@ actor VaultStore {
         var locked: [Tape] = []
         for tape in tapes where tape.rack != .vault {
             let meta = await tapeStore.meta(for: tape.id)
-            if (try? seal(tape, meta: meta, key: key)) != nil {
+            let transcript = await tapeStore.transcript(of: tape.id)
+            if (try? seal(tape, meta: meta, transcript: transcript, key: key)) != nil {
                 locked.append(tape)
             }
         }
@@ -85,6 +87,9 @@ actor VaultStore {
                   let meta = try? unseal(entry, key: key)
             else { continue }
             try? await tapeStore.saveMeta(meta, for: tape.id)
+            if let transcript = readTranscript(entry.name, key: key) {
+                try? await tapeStore.saveTranscript(transcript, for: tape.id)
+            }
             try? remove([tape.id], key: key)
             takenOut += 1
         }
@@ -102,9 +107,31 @@ actor VaultStore {
         let entry = try entry(for: id, key: key)
         var meta = readMeta(entry.name, key: key)
         change(&meta)
-        let part = storage.sealingURL(entry.name)
-        try SealedFileWriter.seal(JSONEncoder().encode(meta), to: part, key: key)
-        _ = try FileManager.default.replaceItemAt(storage.sealedMetaURL(entry.name), withItemAt: part)
+        try sealReplacing(JSONEncoder().encode(meta), at: storage.sealedMetaURL(entry.name), name: entry.name, key: key)
+    }
+
+    /// Seals `data` beside the file it replaces first, so a failure leaves the old one whole.
+    private func sealReplacing(_ data: Data, at url: URL, name: SealedName, key: SymmetricKey) throws {
+        let part = storage.sealingURL(name)
+        defer { try? FileManager.default.removeItem(at: part) }
+        try SealedFileWriter.seal(data, to: part, key: key)
+        if FileManager.default.fileExists(atPath: url.path(percentEncoded: false)) {
+            _ = try FileManager.default.replaceItemAt(url, withItemAt: part)
+        } else {
+            try FileManager.default.moveItem(at: part, to: url)
+        }
+    }
+
+    /// Nil while the vault is locked, or if the tape has no captions yet.
+    func transcript(of id: TapeID) -> Transcript? {
+        guard let key, let entry = try? entry(for: id, key: key) else { return nil }
+        return readTranscript(entry.name, key: key)
+    }
+
+    func saveTranscript(_ transcript: Transcript, for id: TapeID) throws {
+        guard let key else { throw CaptionError.vaultLocked }
+        let entry = try entry(for: id, key: key)
+        try sealReplacing(Data(SubRip.text(of: transcript.cues).utf8), at: storage.sealedCaptionsURL(entry.name), name: entry.name, key: key)
     }
 
     /// Plain copies of vault tapes for the share sheet. This is the one time a vault tape is on
@@ -131,7 +158,7 @@ actor VaultStore {
         removeContents(of: storage.unsealed)
     }
 
-    private func seal(_ tape: Tape, meta: TapeMeta, key: SymmetricKey) throws {
+    private func seal(_ tape: Tape, meta: TapeMeta, transcript: Transcript?, key: SymmetricKey) throws {
         var entries = try readIndex(key)
         guard !entries.contains(where: { $0.id == tape.id }) else { throw SealedFileError.unwritable }
         let name = SealedName.random()
@@ -140,6 +167,9 @@ actor VaultStore {
             try SealedFileWriter.seal(contentsOf: tapeStore.url(of: tape), to: part, key: key)
             try FileManager.default.moveItem(at: part, to: storage.sealedTapeURL(name))
             try SealedFileWriter.seal(JSONEncoder().encode(meta), to: storage.sealedMetaURL(name), key: key)
+            if let transcript {
+                try SealedFileWriter.seal(Data(SubRip.text(of: transcript.cues).utf8), to: storage.sealedCaptionsURL(name), key: key)
+            }
             entries.append(VaultEntry(
                 id: tape.id,
                 name: name,
@@ -200,8 +230,16 @@ actor VaultStore {
         return meta
     }
 
+    private func readTranscript(_ name: SealedName, key: SymmetricKey) -> Transcript? {
+        guard let data = try? SealedFile(url: storage.sealedCaptionsURL(name), key: key).reader().readAll(),
+              let text = String(data: data, encoding: .utf8)
+        else { return nil }
+        return Transcript(cues: SubRip.cues(in: text))
+    }
+
     private func removeFiles(of name: SealedName) {
-        for url in [storage.sealingURL(name), storage.sealedTapeURL(name), storage.sealedMetaURL(name)] {
+        let files = [storage.sealingURL(name), storage.sealedTapeURL(name), storage.sealedMetaURL(name), storage.sealedCaptionsURL(name)]
+        for url in files {
             try? FileManager.default.removeItem(at: url)
         }
     }

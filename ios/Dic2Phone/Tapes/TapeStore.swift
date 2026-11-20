@@ -28,7 +28,8 @@ actor TapeStore {
                 sizeBytes: size,
                 isNew: rack == .deck && !heard.contains(id),
                 title: meta.title,
-                flags: meta.flags
+                flags: meta.flags,
+                hasCaptions: FileManager.default.fileExists(atPath: storage.captionsURL(id).path(percentEncoded: false))
             ))
         }
         return tapes
@@ -49,6 +50,17 @@ actor TapeStore {
         var updated = meta(for: id)
         change(&updated)
         try saveMeta(updated, for: id)
+    }
+
+    /// Nil if the tape has no captions yet.
+    func transcript(of id: TapeID) -> Transcript? {
+        guard let text = try? String(contentsOf: storage.captionsURL(id), encoding: .utf8) else { return nil }
+        return Transcript(cues: SubRip.cues(in: text))
+    }
+
+    func saveTranscript(_ transcript: Transcript, for id: TapeID) throws {
+        let text = SubRip.text(of: transcript.cues)
+        try Data(text.utf8).write(to: storage.captionsURL(id), options: [.atomic, .completeFileProtectionUnlessOpen])
     }
 
     /// Moves a finished recording onto the deck and writes down what is known about it.
@@ -73,6 +85,7 @@ actor TapeStore {
             do {
                 try FileManager.default.removeItem(at: url(of: tape))
                 try? FileManager.default.removeItem(at: storage.metaURL(tape.id))
+                try? FileManager.default.removeItem(at: storage.captionsURL(tape.id))
             } catch {
                 failures += 1
             }

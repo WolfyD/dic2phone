@@ -41,6 +41,26 @@ enum PCMBuffers {
         return samples(from: output)
     }
 
+    /// The samples in a buffer an asset reader decoded to 32-bit float mono; none if the buffer
+    /// holds anything else.
+    static func floats(from sampleBuffer: CMSampleBuffer) -> [Float] {
+        guard let format = CMSampleBufferGetFormatDescription(sampleBuffer),
+              let description = CMAudioFormatDescriptionGetStreamBasicDescription(format)?.pointee,
+              description.mFormatFlags & kAudioFormatFlagIsFloat != 0,
+              description.mBitsPerChannel == 32,
+              description.mChannelsPerFrame == 1,
+              let block = CMSampleBufferGetDataBuffer(sampleBuffer) else { return [] }
+        let count = CMBlockBufferGetDataLength(block) / MemoryLayout<Float>.size
+        var samples = [Float](repeating: 0, count: count)
+        let status = samples.withUnsafeMutableBytes { bytes in
+            guard let base = bytes.baseAddress, bytes.count == count * MemoryLayout<Float>.size else {
+                return kCMBlockBufferBadLengthParameterErr
+            }
+            return CMBlockBufferCopyDataBytes(block, atOffset: 0, dataLength: bytes.count, destination: base)
+        }
+        return status == kCMBlockBufferNoErr ? samples : []
+    }
+
     static func formatDescription() throws -> CMAudioFormatDescription {
         var description = AudioStreamBasicDescription(
             mSampleRate: Float64(TapeFormat.sampleRate),

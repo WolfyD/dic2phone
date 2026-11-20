@@ -39,7 +39,9 @@ final class WhisperModel: @unchecked Sendable {
         percentDone.load(ordering: .relaxed)
     }
 
-    /// Stops the running `transcribe` call soon; it then throws `CancellationError`.
+    /// Stops the running `transcribe` call soon, and refuses any later one: both throw
+    /// `CancellationError`. Never undone, so a cancel that comes just before a call starts
+    /// isn't lost.
     func cancel() {
         cancelled.store(true, ordering: .relaxed)
     }
@@ -50,7 +52,7 @@ final class WhisperModel: @unchecked Sendable {
     /// - Returns: what was said, timed from the start of `samples`.
     func transcribe(_ samples: [Float], language: String) throws -> [Cue] {
         guard let count = Int32(exactly: samples.count) else { throw CaptionError.transcriptionFailed }
-        cancelled.store(false, ordering: .relaxed)
+        if cancelled.load(ordering: .relaxed) { throw CancellationError() }
         percentDone.store(0, ordering: .relaxed)
         let status = language.withCString { language in
             samples.withUnsafeBufferPointer { samples in

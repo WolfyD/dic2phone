@@ -51,6 +51,27 @@ final class TapeLibrary {
         sealedFiles[tape.id]
     }
 
+    /// Where the tape's sound is read from to make captions; nil for a vault tape while the
+    /// vault is locked.
+    func source(of tape: Tape) -> TapeSource? {
+        guard tape.rack == .vault else { return .plain(store.url(of: tape)) }
+        return sealedFiles[tape.id].map(TapeSource.sealed)
+    }
+
+    /// Nil if the tape has no captions yet, or it's in the vault and the vault is locked.
+    func transcript(of tape: Tape) async -> Transcript? {
+        tape.rack == .vault ? await vaultStore.transcript(of: tape.id) : await store.transcript(of: tape.id)
+    }
+
+    func saveTranscript(_ transcript: Transcript, for tape: Tape) async throws {
+        if tape.rack == .vault {
+            try await vaultStore.saveTranscript(transcript, for: tape.id)
+        } else {
+            try await store.saveTranscript(transcript, for: tape.id)
+        }
+        await reload()
+    }
+
     func reload() async {
         let locksBefore = vaultLocks
         deck = await store.tapes(in: .deck, heard: heard.ids)

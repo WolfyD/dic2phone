@@ -15,14 +15,16 @@ final class Vault {
     @ObservationIgnored private let store: VaultStore
     @ObservationIgnored private let library: TapeLibrary
     @ObservationIgnored private let player: Player
+    @ObservationIgnored private let captions: CaptionQueue
     /// Two taps on UNLOCK must not make two keys for a new vault.
     @ObservationIgnored private var opening = false
 
-    init(keychain: VaultKeychain, store: VaultStore, library: TapeLibrary, player: Player) {
+    init(keychain: VaultKeychain, store: VaultStore, library: TapeLibrary, player: Player, captions: CaptionQueue) {
         self.keychain = keychain
         self.store = store
         self.library = library
         self.player = player
+        self.captions = captions
         passcodeIsSet = keychain.passcodeIsSet
     }
 
@@ -53,11 +55,12 @@ final class Vault {
         return .opened
     }
 
-    /// Hides the vault's tapes and stops any of them that is playing straight away, then
-    /// forgets the key.
+    /// Hides the vault's tapes and stops any of them that is playing or being captioned straight
+    /// away, then forgets the key.
     func lock() async {
         isOpen = false
         player.letGo(of: library.vault)
+        captions.forgetVault()
         library.forgetVault()
         await store.close()
     }

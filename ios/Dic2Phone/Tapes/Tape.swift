@@ -10,6 +10,7 @@ struct Tape: Identifiable, Hashable, Sendable {
     var title: String
     /// Flagged moments, in milliseconds from the start, sorted.
     var flags: [Int64]
+    var hasCaptions: Bool
 
     var recordedAt: Date? { id.recordedAt }
 }

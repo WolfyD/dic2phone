@@ -8,6 +8,7 @@ final class VaultStoreTests: XCTestCase {
     private var tapeStore: TapeStore!
     private var store: VaultStore!
     private let key = SymmetricKey(size: .bits256)
+    private let spokenWords = Transcript(cues: [Cue(startMs: 1_000, endMs: 2_000, text: "a secret")])
 
     override func setUpWithError() throws {
         root = try URL.temporaryFolder()
@@ -124,6 +125,47 @@ final class VaultStoreTests: XCTestCase {
 
         await store.clearUnsealed()
         XCTAssertFalse(copies.contains { exists($0) })
+    }
+
+    func testCaptionsAreSealedWithTheirTape() async throws {
+        let (tape, _) = try await recordedTape()
+        try await tapeStore.saveTranscript(spokenWords, for: tape.id)
+
+        let locked = try await lockedAway(tape)
+
+        XCTAssertFalse(exists(storage.captionsURL(tape.id)))
+        XCTAssertEqual(locked.first?.hasCaptions, true)
+        let sealed = await store.transcript(of: tape.id)
+        XCTAssertEqual(sealed, spokenWords)
+        for file in try vaultFiles() {
+            let contents = try Data(contentsOf: storage.vault.appending(path: file))
+            XCTAssertNil(contents.range(of: Data("secret".utf8)), file)
+        }
+    }
+
+    func testCaptionsMadeInTheVaultComeOutWithTheTape() async throws {
+        let (tape, _) = try await recordedTape()
+        let locked = try await lockedAway(tape)
+        try await store.saveTranscript(spokenWords, for: tape.id)
+
+        _ = await store.takeOut(locked)
+
+        let plain = await tapeStore.transcript(of: tape.id)
+        XCTAssertEqual(plain, spokenWords)
+        XCTAssertEqual(try vaultFiles(), ["index"])
+    }
+
+    func testALockedVaultTakesNoCaptions() async throws {
+        let (tape, _) = try await recordedTape()
+        _ = try await lockedAway(tape)
+        await store.close()
+
+        do {
+            try await store.saveTranscript(spokenWords, for: tape.id)
+            XCTFail("Saved captions into a locked vault")
+        } catch {
+            XCTAssertEqual(error as? CaptionError, .vaultLocked)
+        }
     }
 
     func testResettingEmptiesTheVault() async throws {

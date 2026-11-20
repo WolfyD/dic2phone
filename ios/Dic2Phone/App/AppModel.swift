@@ -12,7 +12,10 @@ final class AppModel {
     let recorder: Recorder
     let flagKey: FlagKey
     let vault: Vault
+    let captions: CaptionQueue
+    let models: ModelStore
 
+    private let newTapeCaptions: NewTapeCaptions
     private let audioSession: AudioSession
     private let vaultStore: VaultStore
     private let rescue: TapeRescue
@@ -29,18 +32,26 @@ final class AppModel {
         let library = TapeLibrary(store: store, vaultStore: vaultStore, heard: HeardList(defaults: defaults))
         let feedback = Feedback(settings: settings, audioSession: audioSession, haptics: Haptics())
         let player = Player(settings: settings, store: store, library: library, feedback: feedback, audioSession: audioSession)
+        // Ephemeral: nothing about the download is kept in a cache or cookie store.
+        let models = ModelStore(storage: storage, session: URLSession(configuration: .ephemeral))
+        let captions = CaptionQueue(settings: settings, library: library, models: models)
+        let newTapeCaptions = NewTapeCaptions(settings: settings, models: models, library: library, queue: captions)
         self.settings = settings
         self.library = library
         self.feedback = feedback
         self.player = player
         self.audioSession = audioSession
         self.vaultStore = vaultStore
+        self.models = models
+        self.captions = captions
+        self.newTapeCaptions = newTapeCaptions
         recorder = Recorder(
             settings: settings, store: store, library: library, feedback: feedback,
-            audioSession: audioSession, player: player, makeMic: { EngineMic() }
+            audioSession: audioSession, player: player, newTapeCaptions: newTapeCaptions,
+            makeMic: { EngineMic() }
         )
         flagKey = FlagKey(player: player, library: library)
-        vault = Vault(keychain: VaultKeychain(), store: vaultStore, library: library, player: player)
+        vault = Vault(keychain: VaultKeychain(), store: vaultStore, library: library, player: player, captions: captions)
         rescue = TapeRescue(store: store, device: DeviceLabel.current)
         leftovers = rescue.leftovers()
     }
@@ -61,6 +72,14 @@ final class AppModel {
             recorder.stop()
             player.stop()
         }
+    }
+
+    /// Tapes can arrive or leave through the Files app while Dic2Phone is away, the passcode can
+    /// change, and tapes recorded in a locked phone can now be read.
+    func appBecameActive() {
+        vault.checkPasscode()
+        newTapeCaptions.appBecameActive()
+        Task { await library.reload() }
     }
 
     /// Clicks are silent while recording: they would end up on the tape.

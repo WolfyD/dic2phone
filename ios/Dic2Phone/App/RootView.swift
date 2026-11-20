@@ -22,6 +22,7 @@ struct RootView: View {
         .environment(model.player)
         .environment(model.flagKey)
         .environment(model.vault)
+        .environment(model.captions)
         .preferredColorScheme(settings.theme.isLight ? .light : .dark)
         .task { await model.start() }
         .task { await model.stopForInterruptions() }
@@ -53,13 +54,11 @@ struct RootView: View {
         ))
     }
 
-    /// Tapes can arrive or leave through the Files app while Dic2Phone is away, and the passcode
-    /// can change. Leaving locks the vault; not just going inactive, which the Face ID sheet does.
+    /// Leaving locks the vault; not just going inactive, which the Face ID sheet does.
     private func sceneChanged() {
         switch scenePhase {
         case .active:
-            model.vault.checkPasscode()
-            Task { await model.library.reload() }
+            model.appBecameActive()
         case .background:
             Task { await model.vault.lock() }
         default:

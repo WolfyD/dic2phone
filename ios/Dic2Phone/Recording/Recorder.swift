@@ -21,6 +21,7 @@ final class Recorder {
     @ObservationIgnored private let feedback: Feedback
     @ObservationIgnored private let audioSession: AudioSession
     @ObservationIgnored private let player: Player
+    @ObservationIgnored private let newTapeCaptions: NewTapeCaptions
     @ObservationIgnored private let makeMic: () -> any MicInput
     @ObservationIgnored private var session: RecordingSession?
     @ObservationIgnored private var keyPressedAt: ContinuousClock.Instant?
@@ -32,6 +33,7 @@ final class Recorder {
         feedback: Feedback,
         audioSession: AudioSession,
         player: Player,
+        newTapeCaptions: NewTapeCaptions,
         makeMic: @escaping () -> any MicInput
     ) {
         self.settings = settings
@@ -40,6 +42,7 @@ final class Recorder {
         self.feedback = feedback
         self.audioSession = audioSession
         self.player = player
+        self.newTapeCaptions = newTapeCaptions
         self.makeMic = makeMic
     }
 
@@ -173,6 +176,7 @@ final class Recorder {
         await session.feedTask?.value
         await handle(engine.close(), from: session)
         feedback.recStop()
+        newTapeCaptions.recorded(session.keptTapes)
         if self.session == nil, let message = closingMessage(for: session) {
             state.error = message
         }
