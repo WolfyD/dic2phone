@@ -1,7 +1,7 @@
 import AVFoundation
 
-/// Decodes a tape to the 16 kHz mono float samples whisper.cpp listens to, a little at a time,
-/// so an hour-long tape never has to be in memory whole.
+/// Decodes a tape to mono float samples, a little at a time, so an hour-long tape never has
+/// to be in memory whole. By default at the 16 kHz whisper.cpp listens to.
 final class TapeSamples {
     private let reader: AVAssetReader
     private let output: AVAssetReaderTrackOutput
@@ -9,12 +9,17 @@ final class TapeSamples {
     private let loader: SealedAssetLoader?
 
     /// - Parameter timeRange: only this stretch of the tape; nil for all of it.
-    init(asset: AVURLAsset, loader: SealedAssetLoader? = nil, timeRange: CMTimeRange? = nil) async throws {
+    init(
+        asset: AVURLAsset,
+        loader: SealedAssetLoader? = nil,
+        timeRange: CMTimeRange? = nil,
+        sampleRate: Int = SpeechPieces.sampleRate
+    ) async throws {
         guard let track = try? await asset.loadTracks(withMediaType: .audio).first,
               let reader = try? AVAssetReader(asset: asset) else { throw CaptionError.tapeUnreadable }
         let output = AVAssetReaderTrackOutput(track: track, outputSettings: [
             AVFormatIDKey: kAudioFormatLinearPCM,
-            AVSampleRateKey: SpeechPieces.sampleRate,
+            AVSampleRateKey: sampleRate,
             AVNumberOfChannelsKey: 1,
             AVLinearPCMBitDepthKey: 32,
             AVLinearPCMIsFloatKey: true,

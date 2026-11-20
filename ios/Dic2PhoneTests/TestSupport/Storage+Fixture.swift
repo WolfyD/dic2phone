@@ -7,7 +7,8 @@ extension Storage {
         let storage = Storage(
             support: root.appending(path: "support"),
             documents: root.appending(path: "documents"),
-            temporary: root.appending(path: "tmp")
+            temporary: root.appending(path: "tmp"),
+            caches: root.appending(path: "caches")
         )
         try storage.prepare()
         return storage

@@ -304,6 +304,50 @@
           }
         }
       }
+    },
+    "Send %lld tapes" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Send %lld tape"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Send %lld tapes"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Couldn't dub %lld tapes" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Couldn't dub %lld tape"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Couldn't dub %lld tapes"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "version" : "1.0"

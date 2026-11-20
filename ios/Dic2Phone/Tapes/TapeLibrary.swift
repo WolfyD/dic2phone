@@ -13,18 +13,22 @@ final class TapeLibrary {
     private(set) var problem: String?
     /// Captions read so far. Those of vault tapes are dropped when the vault locks.
     private(set) var transcripts: [TapeID: Transcript] = [:]
+    /// As of the last `refreshEffectCopyUsage()`.
+    private(set) var effectCopyUsage = EffectCopyUsage()
 
     @ObservationIgnored private let store: TapeStore
     @ObservationIgnored private let vaultStore: VaultStore
     @ObservationIgnored private let heard: HeardList
+    @ObservationIgnored private let effectCopies: EffectCopies
     @ObservationIgnored private var sealedFiles: [TapeID: SealedFile] = [:]
     /// Counts locks, so a reload that started before one can't bring the vault's tapes back.
     @ObservationIgnored private var vaultLocks = 0
 
-    init(store: TapeStore, vaultStore: VaultStore, heard: HeardList) {
+    init(store: TapeStore, vaultStore: VaultStore, heard: HeardList, effectCopies: EffectCopies) {
         self.store = store
         self.vaultStore = vaultStore
         self.heard = heard
+        self.effectCopies = effectCopies
     }
 
     var newCount: Int {
@@ -131,11 +135,43 @@ final class TapeLibrary {
         await vaultStore.clearUnsealed()
     }
 
+    /// The tape's effect copy, if it's been made. Never for a vault tape.
+    func readyEffectCopy(of tape: Tape, with effects: TapeEffects) -> URL? {
+        tape.rack == .vault ? nil : effectCopies.ready(tape.id, with: effects)
+    }
+
+    /// The tape's effect copy, made first if need be; nil for a vault tape, or if it couldn't
+    /// be made.
+    func effectCopy(of tape: Tape, with effects: TapeEffects) async -> URL? {
+        guard tape.rack != .vault else { return nil }
+        return await effectCopies.copy(of: tape.id, from: store.url(of: tape), with: effects)
+    }
+
+    func markEffectCopyPlayed(_ copy: URL) {
+        Task { await effectCopies.markPlayed(copy) }
+    }
+
+    /// Only once the racks are read, or every copy would look like it had lost its tape.
+    func tidyEffectCopies(unplayedDays: Int) async {
+        let tapes = Set((deck + shelf).map(\.id))
+        await effectCopies.tidy(keeping: tapes, unplayedDays: unplayedDays, now: .now)
+    }
+
+    func refreshEffectCopyUsage() async {
+        effectCopyUsage = await effectCopies.usage()
+    }
+
+    func clearEffectCopies() async {
+        await effectCopies.clear()
+        await refreshEffectCopyUsage()
+    }
+
     /// - Returns: how many tapes couldn't be deleted.
     func delete(_ tapes: [Tape]) async -> Int {
         let plainFailures = await store.delete(tapes.filter { $0.rack != .vault })
         let sealedFailures = await vaultStore.erase(tapes.filter { $0.rack == .vault })
         heard.forget(tapes.map(\.id))
+        await effectCopies.forget(Set(tapes.map(\.id)))
         await reload()
         return plainFailures + sealedFailures
     }
@@ -149,6 +185,7 @@ final class TapeLibrary {
     }
 
     func lockAway(_ tapes: [Tape]) async -> LockAwayResult {
+        await effectCopies.forget(Set(tapes.map(\.id)))
         let result = await vaultStore.lockAway(tapes)
         heard.forget(result.locked.map(\.id))
         await reload()

@@ -6,7 +6,12 @@ struct SetupScreen: View {
 
     @Environment(\.palette) private var palette
 
-    @State private var tab = SetupTab.look
+    @State private var tab: SetupTab
+
+    init(opening tab: SetupTab, navigate: @escaping (Screen) -> Void) {
+        _tab = State(initialValue: tab)
+        self.navigate = navigate
+    }
 
     var body: some View {
         VStack(spacing: 8) {

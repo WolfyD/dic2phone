@@ -20,3 +20,12 @@ struct ChoiceKeys: View {
         index == chosen ? "\(Glyph.chosen) \(labels[index])" : labels[index]
     }
 }
+
+extension ChoiceKeys {
+    /// A choice of a number of days, where 0 is OFF; `onChoose` is given the days.
+    init(days choices: [Int], chosen days: Int, onChoose: @escaping (Int) -> Void) {
+        labels = choices.map { $0 == 0 ? String(localized: "OFF") : String(localized: "\($0)D") }
+        chosen = choices.firstIndex(of: days) ?? 0
+        self.onChoose = { onChoose(choices[$0]) }
+    }
+}

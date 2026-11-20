@@ -7,14 +7,17 @@ enum TapeSource: Sendable {
     case sealed(SealedFile)
 
     /// - Parameter timeRange: only this stretch of the tape; nil for all of it.
-    func samples(during timeRange: CMTimeRange? = nil) async throws -> TapeSamples {
+    func samples(
+        during timeRange: CMTimeRange? = nil,
+        sampleRate: Int = SpeechPieces.sampleRate
+    ) async throws -> TapeSamples {
         switch self {
         case .plain(let url):
-            return try await TapeSamples(asset: AVURLAsset(url: url), timeRange: timeRange)
+            return try await TapeSamples(asset: AVURLAsset(url: url), timeRange: timeRange, sampleRate: sampleRate)
         case .sealed(let file):
             let loader = SealedAssetLoader(file: file)
             guard let asset = loader.makeAsset() else { throw CaptionError.tapeUnreadable }
-            return try await TapeSamples(asset: asset, loader: loader, timeRange: timeRange)
+            return try await TapeSamples(asset: asset, loader: loader, timeRange: timeRange, sampleRate: sampleRate)
         }
     }
 

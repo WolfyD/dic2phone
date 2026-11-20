@@ -9,6 +9,8 @@ final class TapeListModel {
     let mode: TapeListMode
     private(set) var selected: Set<TapeID> = []
     var confirming: ConfirmRequest?
+    /// Tapes to send, once it's chosen whether as recorded or with tape sound.
+    var choosingSend: [Tape]?
     private(set) var sharing: ShareRequest?
     /// Stands in for Android's toasts.
     var notice: String?
@@ -82,6 +84,10 @@ final class TapeListModel {
         captions.waitingTapes
     }
 
+    var effectsAreOn: Bool {
+        settings.effects.any
+    }
+
     func cycleSort() {
         settings.cycleSort(for: mode.rack)
     }
@@ -135,7 +141,17 @@ final class TapeListModel {
         navigate(.deck)
     }
 
+    /// Vault tapes go as recorded: a copy with tape sound would be their sound left
+    /// unencrypted on disk.
     func send(_ tapes: [Tape]) {
+        if mode.rack == .vault {
+            sendAsRecorded(tapes)
+        } else {
+            choosingSend = tapes
+        }
+    }
+
+    func sendAsRecorded(_ tapes: [Tape]) {
         Task {
             let files = await library.filesToSend(tapes)
             guard !files.isEmpty else {
@@ -144,6 +160,31 @@ final class TapeListModel {
             }
             sharing = ShareRequest(tapes: tapes, files: files)
         }
+    }
+
+    /// Sends the tapes' effect copies, making those not made yet.
+    func sendWithTapeSound(_ tapes: [Tape]) {
+        let effects = settings.effects
+        Task {
+            var copies: [URL] = []
+            for (index, tape) in tapes.enumerated() {
+                busy = String(localized: "DUBBING \(index + 1)/\(tapes.count)…")
+                if let copy = await library.effectCopy(of: tape, with: effects) {
+                    copies.append(copy)
+                }
+            }
+            busy = nil
+            let failed = tapes.count - copies.count
+            if failed > 0 {
+                notice = String(localized: "Couldn't dub \(failed) tapes")
+            }
+            guard !copies.isEmpty else { return }
+            sharing = ShareRequest(tapes: tapes, files: copies)
+        }
+    }
+
+    func openEffectsSetup() {
+        navigate(.setup(.play))
     }
 
     /// Called both when the share sheet reports back and when it's swiped away.

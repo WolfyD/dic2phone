@@ -6,6 +6,6 @@ indirect enum Screen {
     case load
     case shelf
     case vault
-    case setup
+    case setup(SetupTab)
     case search(returningTo: Screen)
 }

@@ -11,7 +11,7 @@ final class TapeSamplesTests: XCTestCase {
     override func setUp() async throws {
         root = try URL.temporaryFolder()
         tapeURL = root.appending(path: "tape.m4a")
-        try await recordTone(to: tapeURL)
+        try await AssetTapeWriter.recordTone(to: tapeURL, seconds: Self.seconds)
     }
 
     override func tearDownWithError() throws {
@@ -62,15 +62,5 @@ final class TapeSamplesTests: XCTestCase {
         XCTAssertEqual(Double(samples.count), Double(expected), accuracy: Double(SpeechPieces.sampleRate) * 0.1, file: file, line: line)
         let loudest = samples.map(abs).max() ?? 0
         XCTAssertGreaterThan(loudest, 0.1, file: file, line: line)
-    }
-
-    private func recordTone(to url: URL) async throws {
-        let writer = try AssetTapeWriter(url: url)
-        let chunk = (0..<TapeFormat.chunkSize).map { Int16(8_000 * sin(Double($0) * 0.1)) }
-        let chunkCount = TapeFormat.sampleRate * Self.seconds / TapeFormat.chunkSize
-        for index in 0..<chunkCount {
-            try await writer.append(chunk, at: Int64(index * TapeFormat.chunkSize))
-        }
-        _ = await writer.finish()
     }
 }

@@ -32,6 +32,7 @@ struct RootView: View {
         .onChange(of: settings.playSpeed) { model.player.applySpeed() }
         .onChange(of: settings.tapePitch) { model.player.applySpeed() }
         .onChange(of: settings.skipSilence) { model.player.prepareSkipping() }
+        .onChange(of: settings.playingEffects) { model.player.prepareEffects() }
     }
 
     @ViewBuilder
@@ -42,7 +43,7 @@ struct RootView: View {
         case .load: tapeList(.load)
         case .shelf: tapeList(.shelf)
         case .vault: tapeList(.vault)
-        case .setup: SetupScreen(navigate: navigate)
+        case .setup(let tab): SetupScreen(opening: tab, navigate: navigate)
         case .search(let back): search(returningTo: back)
         }
     }

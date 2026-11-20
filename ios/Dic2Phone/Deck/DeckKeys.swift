@@ -33,7 +33,7 @@ struct DeckKeys {
         keys += [
             BankKey(id: "tapes", label: String(localized: "TAPES"), face: .icon(.tapes), action: .tap { navigate(.tapes) }),
             BankKey(id: "shelf", label: String(localized: "SHELF"), face: .icon(.shelf), action: .tap { navigate(.shelf) }),
-            BankKey(id: "setup", label: String(localized: "SETUP"), face: .glyph(Glyph.setup), action: .tap { navigate(.setup) }),
+            BankKey(id: "setup", label: String(localized: "SETUP"), face: .glyph(Glyph.setup), action: .tap { navigate(.setup(.look)) }),
         ]
         return keys
     }

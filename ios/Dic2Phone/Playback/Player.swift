@@ -3,6 +3,7 @@ import Observation
 
 /// The single tape player. Lists play a tape straight away; the deck can also hold a loaded tape
 /// that keeps its place between play and pause, and can be scrubbed and skipped through.
+/// With PLAY WITH EFFECTS on, plain tapes play through their effect copy.
 @MainActor
 @Observable
 final class Player {
@@ -29,6 +30,7 @@ final class Player {
     @ObservationIgnored private let silences = SilenceSkipper()
     @ObservationIgnored private var playingDurationMs: Int64 = 0
     @ObservationIgnored private var tick: Task<Void, Never>?
+    @ObservationIgnored private var effectsSwitch: Task<Void, Never>?
 
     init(settings: Settings, store: TapeStore, library: TapeLibrary, feedback: Feedback, audioSession: AudioSession) {
         self.settings = settings
@@ -65,7 +67,9 @@ final class Player {
             return
         }
         stop()
-        guard let item = makeItem(for: tape), (try? audioSession.activate()) != nil else { return }
+        let effectCopy = readyEffectCopy(of: tape)
+        guard let item = effectCopy.map(AVPlayerItem.init(url:)) ?? makeItem(for: tape),
+              (try? audioSession.activate()) != nil else { return }
         item.audioTimePitchAlgorithm = pitchAlgorithm
         let started = AVPlayer(playerItem: item)
         if ms > 0 {
@@ -79,11 +83,18 @@ final class Player {
         if tape.isNew { library.markHeard([tape]) }
         startTicking()
         prepareSkipping()
+        if let effectCopy {
+            library.markEffectCopyPlayed(effectCopy)
+        } else {
+            switchToEffectsWhenMade(tape)
+        }
     }
 
     func stop() {
         tick?.cancel()
         tick = nil
+        effectsSwitch?.cancel()
+        effectsSwitch = nil
         silences.stop()
         if let player, let playingID {
             setPosition(Self.milliseconds(player.currentTime()), of: playingID)
@@ -110,6 +121,13 @@ final class Player {
         silences.prepare(tape, from: source)
     }
 
+    /// Starts making the deck tape's effect copy, if tapes play through the effects, so it's
+    /// ready by the time PLAY is pressed.
+    func prepareEffects() {
+        guard let effects = settings.playingEffects, let tape = loaded else { return }
+        Task { [library] in _ = await library.effectCopy(of: tape, with: effects) }
+    }
+
     func load(_ tape: Tape) {
         guard loadedID != tape.id else { return }
         if playingID != nil { stop() }
@@ -118,6 +136,7 @@ final class Player {
         deckPositionMs = 0
         // A vault tape's name would give away when it was recorded, so it isn't written down.
         settings.deckTape = tape.rack == .vault ? nil : tape.id
+        prepareEffects()
     }
 
     func eject() {
@@ -182,6 +201,31 @@ final class Player {
         let loader = SealedAssetLoader(file: file)
         sealedLoader = loader
         return loader.makeItem()
+    }
+
+    private func readyEffectCopy(of tape: Tape) -> URL? {
+        settings.playingEffects.flatMap { library.readyEffectCopy(of: tape, with: $0) }
+    }
+
+    /// The tape plays as recorded while its effect copy is made, rather than keeping PLAY
+    /// waiting, then carries on from the same place through the copy.
+    private func switchToEffectsWhenMade(_ tape: Tape) {
+        guard let effects = settings.playingEffects, tape.rack != .vault else { return }
+        effectsSwitch = Task { [weak self, library] in
+            guard let copy = await library.effectCopy(of: tape, with: effects), !Task.isCancelled else { return }
+            self?.switchToEffectCopy(copy, of: tape.id)
+        }
+    }
+
+    private func switchToEffectCopy(_ copy: URL, of id: TapeID) {
+        guard playingID == id, let player else { return }
+        let now = player.currentTime()
+        let item = AVPlayerItem(url: copy)
+        item.audioTimePitchAlgorithm = pitchAlgorithm
+        player.replaceCurrentItem(with: item)
+        player.seek(to: now, toleranceBefore: .zero, toleranceAfter: .zero)
+        player.playImmediately(atRate: settings.playSpeed)
+        library.markEffectCopyPlayed(copy)
     }
 
     private var pitchAlgorithm: AVAudioTimePitchAlgorithm {

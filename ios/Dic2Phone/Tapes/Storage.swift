@@ -6,6 +6,9 @@ import Foundation
 /// tapes while the phone is locked, but nothing can be read back until it is unlocked.
 /// New files inherit their folder's protection.
 struct Storage: Sendable {
+    static let protection = [FileAttributeKey.protectionKey: FileProtectionType.completeUnlessOpen]
+    private static let effectCopySuffix = "_tape.m4a"
+
     let deck: URL
     let shelf: URL
     let recording: URL
@@ -16,8 +19,13 @@ struct Storage: Sendable {
     let vault: URL
     /// Plain copies on their way out of the vault: to the shelf, or to the share sheet.
     let unsealed: URL
+    /// Tapes' effect copies, in a folder per combination of effects. In the caches, which
+    /// iOS empties by itself when storage runs low; they can always be made again.
+    let effectCopies: URL
+    /// Effect copies being made, until they're finished.
+    let effectDrafts: URL
 
-    init(support: URL, documents: URL, temporary: URL) {
+    init(support: URL, documents: URL, temporary: URL, caches: URL) {
         deck = support.appending(path: "deck", directoryHint: .isDirectory)
         recording = support.appending(path: "recording", directoryHint: .isDirectory)
         meta = support.appending(path: "meta", directoryHint: .isDirectory)
@@ -26,19 +34,21 @@ struct Storage: Sendable {
         vault = support.appending(path: "vault", directoryHint: .isDirectory)
         shelf = documents.appending(path: "Shelf", directoryHint: .isDirectory)
         unsealed = temporary.appending(path: "unsealed", directoryHint: .isDirectory)
+        effectCopies = caches.appending(path: "effects", directoryHint: .isDirectory)
+        effectDrafts = caches.appending(path: "effect-drafts", directoryHint: .isDirectory)
     }
 
     static func standard() throws -> Storage {
         let files = FileManager.default
         let support = try files.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
         let documents = try files.url(for: .documentDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
-        return Storage(support: support, documents: documents, temporary: files.temporaryDirectory)
+        let caches = try files.url(for: .cachesDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
+        return Storage(support: support, documents: documents, temporary: files.temporaryDirectory, caches: caches)
     }
 
     func prepare() throws {
-        let protection = [FileAttributeKey.protectionKey: FileProtectionType.completeUnlessOpen]
-        for folder in [deck, shelf, recording, meta, captions, models, vault, unsealed] {
-            try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true, attributes: protection)
+        for folder in [deck, shelf, recording, meta, captions, models, vault, unsealed, effectCopies, effectDrafts] {
+            try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true, attributes: Self.protection)
         }
         // The vault's key never leaves this phone, so a backup of the sealed tapes could never
         // be opened anywhere else; keeping them out of backups also keeps them off iCloud.
@@ -127,6 +137,27 @@ struct Storage: Sendable {
     /// A plain copy of a vault tape's captions for the share sheet.
     func sendingCaptionsURL(_ id: TapeID) -> URL {
         unsealed.appending(path: id.baseName + ".srt", directoryHint: .notDirectory)
+    }
+
+    /// The folder for copies made with one combination of effects, named by its mask.
+    func effectCopyFolder(mask: Int) -> URL {
+        effectCopies.appending(path: "fx\(mask)", directoryHint: .isDirectory)
+    }
+
+    /// A plain tape's effect copy, under the tape's name with `_tape` added, as Android sends it.
+    func effectCopyURL(_ id: TapeID, mask: Int) -> URL {
+        effectCopyFolder(mask: mask).appending(path: id.baseName + Self.effectCopySuffix, directoryHint: .notDirectory)
+    }
+
+    func effectDraftURL(_ id: TapeID, mask: Int) -> URL {
+        effectDrafts.appending(path: "fx\(mask)-" + id.baseName + Self.effectCopySuffix, directoryHint: .notDirectory)
+    }
+
+    /// The tape an effect copy was made from; nil for any other file.
+    func tapeID(ofEffectCopy copy: URL) -> TapeID? {
+        let name = copy.lastPathComponent
+        guard name.hasSuffix(Self.effectCopySuffix) else { return nil }
+        return TapeID(String(name.dropLast(Self.effectCopySuffix.count)) + "." + TapeID.fileExtension)
     }
 
     /// A name for a tape starting at `date` that no tape anywhere uses yet.

@@ -29,7 +29,10 @@ final class AppModel {
         let vaultStore = VaultStore(storage: storage, tapeStore: store)
         let audioSession = AudioSession()
         let settings = Settings(defaults: defaults)
-        let library = TapeLibrary(store: store, vaultStore: vaultStore, heard: HeardList(defaults: defaults))
+        let library = TapeLibrary(
+            store: store, vaultStore: vaultStore,
+            heard: HeardList(defaults: defaults), effectCopies: EffectCopies(storage: storage)
+        )
         let feedback = Feedback(settings: settings, audioSession: audioSession, haptics: Haptics())
         let player = Player(settings: settings, store: store, library: library, feedback: feedback, audioSession: audioSession)
         // Ephemeral: nothing about the download is kept in a cache or cookie store.
@@ -66,6 +69,7 @@ final class AppModel {
         await vaultStore.clearUnsealed()
         await library.reload()
         await tidyTapes()
+        player.prepareEffects()
     }
 
     /// A call or an alarm takes the audio away: stop cleanly, so the tape so far is saved,
@@ -89,12 +93,15 @@ final class AppModel {
         }
     }
 
-    /// Never mid-recording, when the deck is busy with the tape being made.
+    /// AUTO-TIDY, and effect copies not played for a while. Never mid-recording, when the deck
+    /// is busy with the tape being made.
     private func tidyTapes() async {
         guard !recorder.state.recording else { return }
         let overdue = AutoTidy(settings: settings, player: player).overdue(in: library.deck, now: .now)
-        guard !overdue.isEmpty else { return }
-        _ = await library.delete(overdue)
+        if !overdue.isEmpty {
+            _ = await library.delete(overdue)
+        }
+        await library.tidyEffectCopies(unplayedDays: settings.effectKeepDays)
     }
 
     /// Clicks are silent while recording: they would end up on the tape.

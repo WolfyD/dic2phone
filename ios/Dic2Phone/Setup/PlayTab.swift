@@ -1,10 +1,19 @@
 import SwiftUI
 
-/// Playback speed, whether a faster tape sounds higher, skipping silences, and winding.
+/// Playback speed, whether a faster tape sounds higher, skipping silences and winding; then
+/// the tape effects and their copies.
 struct PlayTab: View {
     @Environment(Settings.self) private var settings
 
     var body: some View {
+        VStack(spacing: 10) {
+            playback
+            EffectsPanel()
+            EffectCopiesPanel()
+        }
+    }
+
+    private var playback: some View {
         SetupPanel(title: String(localized: "PLAYBACK")) {
             SetupHeading(text: String(localized: "SPEED"))
             ChoiceKeys(

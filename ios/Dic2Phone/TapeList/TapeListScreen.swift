@@ -67,6 +67,7 @@ struct TapeListScreen: View {
         } message: { request in
             Text(verbatim: request.message)
         }
+        .sendChoice(model)
         .sheet(isPresented: Binding { model.sharing != nil } set: { if !$0 { model.finishSharing(sent: false) } }) {
             ShareSheet(items: model.sharing?.files ?? [], onFinish: model.finishSharing)
                 .presentationDetents([.medium, .large])
