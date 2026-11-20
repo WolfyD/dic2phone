@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// The deck's subtitle window: what's being said right now, how far along the transcript is,
-/// or a key to make one.
+/// The deck's subtitle window: what's being said right now, or how far along the transcript is.
+/// It takes no room on a tape that has no transcript coming.
 struct DeckCaptions: View {
     let tape: Tape
 
@@ -10,14 +10,9 @@ struct DeckCaptions: View {
     @Environment(Player.self) private var player
     @Environment(\.palette) private var palette
 
-    @State private var request: [Tape]?
-
     var body: some View {
         window
-            .frame(maxWidth: .infinity)
-            .frame(height: CaptionLine.height)
             .task(id: tape) { await library.loadTranscript(of: tape) }
-            .transcribeRequest($request)
     }
 
     @ViewBuilder
@@ -27,12 +22,14 @@ struct DeckCaptions: View {
                 note(String(localized: "NO SPEECH FOUND ON THIS TAPE"), color: palette.dim)
             } else {
                 CaptionLine(text: transcript.cue(atMs: player.deckPositionMs)?.text)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: CaptionLine.height)
             }
         } else if captions.waitingTapes.contains(tape.id) {
             note(progress, color: palette.led)
-        } else if !tape.hasCaptions {
-            DeckKey(label: String(localized: "TRANSCRIBE"), height: 40) { request = [tape] }
-                .frame(width: 180)
+        } else if tape.hasCaptions {
+            // Still reading it: the window's already there, so nothing shifts when it arrives.
+            note("", color: palette.dim)
         }
     }
 
@@ -49,5 +46,7 @@ struct DeckCaptions: View {
             .foregroundStyle(color)
             .multilineTextAlignment(.center)
             .lineLimit(2)
+            .frame(maxWidth: .infinity)
+            .frame(height: CaptionLine.height)
     }
 }

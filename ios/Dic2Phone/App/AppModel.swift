@@ -86,4 +86,8 @@ final class AppModel {
             if !recorder.state.recording { feedback.key() }
         }
     }
+
+    var detentClick: KeyClick {
+        KeyClick { [feedback] in feedback.detent() }
+    }
 }

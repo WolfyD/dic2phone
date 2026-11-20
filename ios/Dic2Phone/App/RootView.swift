@@ -16,6 +16,7 @@ struct RootView: View {
         }
         .environment(\.palette, settings.theme)
         .environment(\.keyClick, model.keyClick)
+        .environment(\.detentClick, model.detentClick)
         .environment(settings)
         .environment(model.library)
         .environment(model.recorder)

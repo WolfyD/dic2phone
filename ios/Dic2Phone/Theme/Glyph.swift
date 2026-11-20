@@ -8,6 +8,8 @@ enum Glyph {
     static let fastForward = "▶\u{FE0E}▶\u{FE0E}"
     static let eject = "⏏\u{FE0E}"
     static let flag = "⚑"
+    static let previousFlag = "◀\u{FE0E}⚑"
+    static let nextFlag = "⚑▶\u{FE0E}"
     static let setup = "⚙\u{FE0E}"
     static let warning = "⚠\u{FE0E}"
     static let stop = "■"
@@ -20,6 +22,8 @@ enum Glyph {
     static let notChosen = "○"
     static let folded = "▸"
     static let unfolded = "▾"
+    static let lidClosed = "▾"
+    static let lidOpen = "▴"
     /// Padlocks have no plain-text form on iOS; they show as emoji, as they do on Android.
     static let locked = "🔒"
     static let unlocked = "🔓"
