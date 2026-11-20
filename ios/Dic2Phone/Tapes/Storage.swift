@@ -10,6 +10,9 @@ struct Storage: Sendable {
     let shelf: URL
     let recording: URL
     let meta: URL
+    let captions: URL
+    /// Downloaded speech models.
+    let models: URL
     let vault: URL
     /// Plain copies on their way out of the vault: to the shelf, or to the share sheet.
     let unsealed: URL
@@ -18,6 +21,8 @@ struct Storage: Sendable {
         deck = support.appending(path: "deck", directoryHint: .isDirectory)
         recording = support.appending(path: "recording", directoryHint: .isDirectory)
         meta = support.appending(path: "meta", directoryHint: .isDirectory)
+        captions = support.appending(path: "captions", directoryHint: .isDirectory)
+        models = support.appending(path: "models", directoryHint: .isDirectory)
         vault = support.appending(path: "vault", directoryHint: .isDirectory)
         shelf = documents.appending(path: "Shelf", directoryHint: .isDirectory)
         unsealed = temporary.appending(path: "unsealed", directoryHint: .isDirectory)
@@ -32,15 +37,21 @@ struct Storage: Sendable {
 
     func prepare() throws {
         let protection = [FileAttributeKey.protectionKey: FileProtectionType.completeUnlessOpen]
-        for folder in [deck, shelf, recording, meta, vault, unsealed] {
+        for folder in [deck, shelf, recording, meta, captions, models, vault, unsealed] {
             try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true, attributes: protection)
         }
         // The vault's key never leaves this phone, so a backup of the sealed tapes could never
         // be opened anywhere else; keeping them out of backups also keeps them off iCloud.
+        try Self.excludeFromBackup(vault)
+        // Models can be downloaded again, and Apple asks that such files stay out of backups.
+        try Self.excludeFromBackup(models)
+    }
+
+    private static func excludeFromBackup(_ folder: URL) throws {
         var values = URLResourceValues()
         values.isExcludedFromBackup = true
-        var vaultFolder = vault
-        try vaultFolder.setResourceValues(values)
+        var excluded = folder
+        try excluded.setResourceValues(values)
     }
 
     func folder(for rack: Rack) -> URL {
@@ -58,6 +69,20 @@ struct Storage: Sendable {
 
     func metaURL(_ id: TapeID) -> URL {
         meta.appending(path: id.baseName + ".json", directoryHint: .notDirectory)
+    }
+
+    /// A plain tape's captions, as SubRip text.
+    func captionsURL(_ id: TapeID) -> URL {
+        captions.appending(path: id.baseName + ".srt", directoryHint: .notDirectory)
+    }
+
+    func modelURL(_ model: SpeechModel) -> URL {
+        models.appending(path: model.fileName, directoryHint: .notDirectory)
+    }
+
+    /// A model being downloaded, until it's verified.
+    func modelDownloadURL(_ model: SpeechModel) -> URL {
+        models.appending(path: model.fileName + ".part", directoryHint: .notDirectory)
     }
 
     func recordingURL(_ id: TapeID) -> URL {
@@ -78,6 +103,10 @@ struct Storage: Sendable {
 
     func sealedMetaURL(_ name: SealedName) -> URL {
         vault.appending(path: name.value + ".meta", directoryHint: .notDirectory)
+    }
+
+    func sealedCaptionsURL(_ name: SealedName) -> URL {
+        vault.appending(path: name.value + ".cc", directoryHint: .notDirectory)
     }
 
     /// A tape being sealed, until it's complete.

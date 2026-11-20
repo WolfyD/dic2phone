@@ -14,6 +14,16 @@ deployment_target=18.0
 arm_baseline=armv8.2-a+fp16
 headers=(include/whisper.h ggml/include/ggml.h ggml/include/ggml-cpu.h ggml/include/ggml-backend.h ggml/include/ggml-alloc.h)
 
+# whisper.cpp built as a project of its own expects files the vendored copy leaves out, and
+# writes into its source folder; as a subproject, like the Android build uses it, it does neither.
+wrapper="$work/wrapper"
+mkdir -p "$wrapper"
+cat > "$wrapper/CMakeLists.txt" <<CMAKE
+cmake_minimum_required(VERSION 3.13)
+project(whisper_ios C CXX)
+add_subdirectory("$source_dir" whisper EXCLUDE_FROM_ALL)
+CMAKE
+
 build_library() {
     local name=$1 sysroot=$2 arch=$3
     local build="$work/build-$name"
@@ -21,7 +31,7 @@ build_library() {
     if [ "$arch" = arm64 ]; then
         arch_options=(-DGGML_CPU_ARM_ARCH="$arm_baseline")
     fi
-    cmake -S "$source_dir" -B "$build" -G "Unix Makefiles" \
+    cmake -S "$wrapper" -B "$build" -G "Unix Makefiles" \
         -DCMAKE_SYSTEM_NAME=iOS \
         -DCMAKE_OSX_SYSROOT="$sysroot" \
         -DCMAKE_OSX_ARCHITECTURES="$arch" \
