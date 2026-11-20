@@ -4,6 +4,7 @@ import XCTest
 /// CI without a Mac or an iPhone.
 final class ScreenshotTests: XCTestCase {
     private static let setupTabs = ["LOOK", "REC", "PLAY", "MORE"]
+    private static let firstSetupShot = 5
     private static let rotationTime: TimeInterval = 2
 
     override func setUpWithError() throws {
@@ -19,20 +20,23 @@ final class ScreenshotTests: XCTestCase {
         keepScreenshot("01-deck")
         press("TAPES", in: app)
         keepScreenshot("02-tapes")
-        backToDeck(in: app)
+        back(to: "DECK", in: app)
         press("SHELF", in: app)
         keepScreenshot("03-shelf")
-        backToDeck(in: app)
+        press("THE VAULT", in: app)
+        keepScreenshot("04-vault")
+        back(to: "SHELF", in: app)
+        back(to: "DECK", in: app)
         press("SETUP", in: app)
         for (index, tab) in Self.setupTabs.enumerated() {
             press(tab, in: app)
-            keepScreenshot("0\(index + 4)-setup-\(tab.lowercased())")
+            keepScreenshot("0\(Self.firstSetupShot + index)-setup-\(tab.lowercased())")
         }
         app.swipeUp()
-        keepScreenshot("08-setup-more-end")
-        backToDeck(in: app)
+        keepScreenshot("09-setup-more-end")
+        back(to: "DECK", in: app)
         turnSideways()
-        keepScreenshot("09-deck-landscape")
+        keepScreenshot("10-deck-landscape")
     }
 
     /// Screenshots don't wait for animations the way taps do, so without the pause the shot
@@ -52,9 +56,9 @@ final class ScreenshotTests: XCTestCase {
 
     /// The back key's arrow glyph carries a variation selector, so it's found by its word.
     @MainActor
-    private func backToDeck(in app: XCUIApplication) {
-        let back = app.buttons.matching(NSPredicate(format: "label ENDSWITH %@", " DECK")).firstMatch
-        XCTAssertTrue(back.waitForExistence(timeout: 5), "No back key")
+    private func back(to screen: String, in app: XCUIApplication) {
+        let back = app.buttons.matching(NSPredicate(format: "label ENDSWITH %@", " \(screen)")).firstMatch
+        XCTAssertTrue(back.waitForExistence(timeout: 5), "No back key to \(screen)")
         back.tap()
     }
 

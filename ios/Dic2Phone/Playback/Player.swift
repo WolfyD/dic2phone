@@ -27,6 +27,8 @@ final class Player {
     @ObservationIgnored private let feedback: Feedback
     @ObservationIgnored private let audioSession: AudioSession
     @ObservationIgnored private var player: AVPlayer?
+    /// Feeds a vault tape to the player; kept here because its item only holds it weakly.
+    @ObservationIgnored private var sealedLoader: SealedAssetLoader?
     @ObservationIgnored private var playingDurationMs: Int64 = 0
     @ObservationIgnored private var tick: Task<Void, Never>?
     @ObservationIgnored private var winding: Task<Void, Never>?
@@ -66,8 +68,7 @@ final class Player {
             return
         }
         stop()
-        guard (try? audioSession.activate()) != nil else { return }
-        let item = AVPlayerItem(url: store.url(of: tape))
+        guard let item = makeItem(for: tape), (try? audioSession.activate()) != nil else { return }
         item.audioTimePitchAlgorithm = pitchAlgorithm
         let started = AVPlayer(playerItem: item)
         if ms > 0 {
@@ -90,6 +91,7 @@ final class Player {
             player.pause()
         }
         player = nil
+        sealedLoader = nil
         playingID = nil
         positionMs = 0
     }
@@ -107,13 +109,25 @@ final class Player {
         feedback.doorClose()
         loadedID = tape.id
         deckPositionMs = 0
-        settings.deckTape = tape.id
+        // A vault tape's name would give away when it was recorded, so it isn't written down.
+        settings.deckTape = tape.rack == .vault ? nil : tape.id
     }
 
     func eject() {
         if deckPlaying { stop() }
         feedback.doorOpen()
         loadedID = nil
+        deckPositionMs = 0
+        settings.deckTape = nil
+    }
+
+    /// Tapes moving into, out of or within the vault: they're stopped and taken out of the deck,
+    /// so nothing keeps playing a vault tape once it's locked, or a file that has moved.
+    func letGo(of tapes: [Tape]) {
+        let ids = Set(tapes.map(.id))
+        if let playingID, ids.contains(playingID) { stop() }
+        guard let loadedID, ids.contains(loadedID) else { return }
+        self.loadedID = nil
         deckPositionMs = 0
         settings.deckTape = nil
     }
@@ -165,6 +179,14 @@ final class Player {
     func stopWinding() {
         winding?.cancel()
         winding = nil
+    }
+
+    private func makeItem(for tape: Tape) -> AVPlayerItem? {
+        guard tape.rack == .vault else { return AVPlayerItem(url: store.url(of: tape)) }
+        guard let file = library.sealedFile(of: tape) else { return nil }
+        let loader = SealedAssetLoader(file: file)
+        sealedLoader = loader
+        return loader.makeItem()
     }
 
     private var pitchAlgorithm: AVAudioTimePitchAlgorithm {

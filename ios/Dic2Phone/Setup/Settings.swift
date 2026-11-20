@@ -22,6 +22,7 @@ final class Settings {
     var tapePitch: Bool { didSet { defaults.set(tapePitch, forKey: Key.tapePitch) } }
     var deckSort: TapeSort { didSet { defaults.set(deckSort.rawValue, forKey: Key.deckSort) } }
     var shelfSort: TapeSort { didSet { defaults.set(shelfSort.rawValue, forKey: Key.shelfSort) } }
+    var vaultSort: TapeSort { didSet { defaults.set(vaultSort.rawValue, forKey: Key.vaultSort) } }
     var deckTape: TapeID? { didSet { defaults.set(deckTape?.fileName ?? "", forKey: Key.deckTape) } }
     var minidisc: Bool { didSet { defaults.set(minidisc, forKey: Key.minidisc) } }
     var labelTyped: Bool { didSet { defaults.set(labelTyped, forKey: Key.labelTyped) } }
@@ -41,6 +42,7 @@ final class Settings {
         tapePitch = defaults.bool(forKey: Key.tapePitch)
         deckSort = TapeSort(rawValue: defaults.string(forKey: Key.deckSort) ?? "") ?? .newest
         shelfSort = TapeSort(rawValue: defaults.string(forKey: Key.shelfSort) ?? "") ?? .newest
+        vaultSort = TapeSort(rawValue: defaults.string(forKey: Key.vaultSort) ?? "") ?? .newest
         deckTape = defaults.string(forKey: Key.deckTape).flatMap(TapeID.init)
         minidisc = defaults.bool(forKey: Key.minidisc)
         labelTyped = defaults.bool(forKey: Key.labelTyped)
@@ -69,6 +71,7 @@ final class Settings {
         switch rack {
         case .deck: deckSort
         case .shelf: shelfSort
+        case .vault: vaultSort
         }
     }
 
@@ -76,6 +79,7 @@ final class Settings {
         switch rack {
         case .deck: deckSort = deckSort.next
         case .shelf: shelfSort = shelfSort.next
+        case .vault: vaultSort = vaultSort.next
         }
     }
 
@@ -90,6 +94,7 @@ final class Settings {
         static let tapePitch = "tape_pitch"
         static let deckSort = "sort_deck"
         static let shelfSort = "sort_shelf"
+        static let vaultSort = "sort_vault"
         static let deckTape = "deck_tape"
         static let tapeLabel = "tape_label"
         static let minidisc = "minidisc"

@@ -1,7 +1,8 @@
 import AVFoundation
 
 /// Builds the app's services once, wired to each other, and runs the work that belongs to the
-/// app rather than to a screen: saving cut-off tapes at launch, and stopping for phone calls.
+/// app rather than to a screen: saving cut-off tapes and clearing unsealed copies at launch,
+/// and stopping for phone calls.
 @MainActor
 final class AppModel {
     let settings: Settings
@@ -10,8 +11,10 @@ final class AppModel {
     let player: Player
     let recorder: Recorder
     let flagKey: FlagKey
+    let vault: Vault
 
     private let audioSession: AudioSession
+    private let vaultStore: VaultStore
     private let rescue: TapeRescue
     private let leftovers: [TapeID]
 
@@ -20,9 +23,10 @@ final class AppModel {
         try storage.prepare()
         let defaults = UserDefaults.standard
         let store = TapeStore(storage: storage)
+        let vaultStore = VaultStore(storage: storage, tapeStore: store)
         let audioSession = AudioSession()
         let settings = Settings(defaults: defaults)
-        let library = TapeLibrary(store: store, heard: HeardList(defaults: defaults))
+        let library = TapeLibrary(store: store, vaultStore: vaultStore, heard: HeardList(defaults: defaults))
         let feedback = Feedback(settings: settings, audioSession: audioSession, haptics: Haptics())
         let player = Player(settings: settings, store: store, library: library, feedback: feedback, audioSession: audioSession)
         self.settings = settings
@@ -30,11 +34,13 @@ final class AppModel {
         self.feedback = feedback
         self.player = player
         self.audioSession = audioSession
+        self.vaultStore = vaultStore
         recorder = Recorder(
             settings: settings, store: store, library: library, feedback: feedback,
             audioSession: audioSession, player: player, makeMic: { EngineMic() }
         )
         flagKey = FlagKey(player: player, library: library)
+        vault = Vault(keychain: VaultKeychain(), store: vaultStore, library: library, player: player)
         rescue = TapeRescue(store: store, device: DeviceLabel.current)
         leftovers = rescue.leftovers()
     }
@@ -43,6 +49,7 @@ final class AppModel {
         // If this fails, activating the session to record or play fails too, and says so there.
         try? audioSession.configure()
         _ = await rescue.rescue(leftovers)
+        await vaultStore.clearUnsealed()
         await library.reload()
     }
 

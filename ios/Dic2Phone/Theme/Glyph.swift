@@ -19,4 +19,7 @@ enum Glyph {
     static let notChosen = "○"
     static let folded = "▸"
     static let unfolded = "▾"
+    /// Padlocks have no plain-text form on iOS; they show as emoji, as they do on Android.
+    static let locked = "🔒"
+    static let unlocked = "🔓"
 }

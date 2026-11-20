@@ -1,7 +1,8 @@
 import SwiftUI
 
-/// The shelf: a wooden rack holding tapes as cassette-case spines.
+/// A rack holding tapes as cassette-case spines: the wooden shelf, or the vault's steel one.
 struct ShelfRack<Content: View>: View {
+    let material: RackMaterial
     @ViewBuilder let content: Content
 
     var body: some View {
@@ -14,18 +15,15 @@ struct ShelfRack<Content: View>: View {
                 .padding(.horizontal, 6)
                 .padding(.vertical, 4)
             }
-            .background(Color(hex: 0x24170D))
+            .background(material.back)
             side
         }
-        .background(Color(hex: 0x3E2716))
+        .background(material.frame)
         .clipShape(RoundedRectangle(cornerRadius: 6))
     }
 
     private var side: some View {
-        LinearGradient(
-            colors: [Color(hex: 0x5A3A22), Color(hex: 0x7A5232), Color(hex: 0x5A3A22)],
-            startPoint: .leading, endPoint: .trailing
-        )
-        .frame(width: 12)
+        LinearGradient(colors: material.side, startPoint: .leading, endPoint: .trailing)
+            .frame(width: 12)
     }
 }

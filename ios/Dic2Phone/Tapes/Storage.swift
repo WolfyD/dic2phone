@@ -10,35 +10,48 @@ struct Storage: Sendable {
     let shelf: URL
     let recording: URL
     let meta: URL
+    let vault: URL
+    /// Plain copies on their way out of the vault: to the shelf, or to the share sheet.
+    let unsealed: URL
 
-    init(support: URL, documents: URL) {
+    init(support: URL, documents: URL, temporary: URL) {
         deck = support.appending(path: "deck", directoryHint: .isDirectory)
         recording = support.appending(path: "recording", directoryHint: .isDirectory)
         meta = support.appending(path: "meta", directoryHint: .isDirectory)
+        vault = support.appending(path: "vault", directoryHint: .isDirectory)
         shelf = documents.appending(path: "Shelf", directoryHint: .isDirectory)
+        unsealed = temporary.appending(path: "unsealed", directoryHint: .isDirectory)
     }
 
     static func standard() throws -> Storage {
         let files = FileManager.default
         let support = try files.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
         let documents = try files.url(for: .documentDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
-        return Storage(support: support, documents: documents)
+        return Storage(support: support, documents: documents, temporary: files.temporaryDirectory)
     }
 
     func prepare() throws {
         let protection = [FileAttributeKey.protectionKey: FileProtectionType.completeUnlessOpen]
-        for folder in [deck, shelf, recording, meta] {
+        for folder in [deck, shelf, recording, meta, vault, unsealed] {
             try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true, attributes: protection)
         }
+        // The vault's key never leaves this phone, so a backup of the sealed tapes could never
+        // be opened anywhere else; keeping them out of backups also keeps them off iCloud.
+        var values = URLResourceValues()
+        values.isExcludedFromBackup = true
+        var vaultFolder = vault
+        try vaultFolder.setResourceValues(values)
     }
 
     func folder(for rack: Rack) -> URL {
         switch rack {
         case .deck: deck
         case .shelf: shelf
+        case .vault: vault
         }
     }
 
+    /// Where a plain tape's file is. Vault tapes are sealed under a `SealedName` instead.
     func tapeURL(_ id: TapeID, in rack: Rack) -> URL {
         folder(for: rack).appending(path: id.fileName, directoryHint: .notDirectory)
     }
@@ -55,12 +68,39 @@ struct Storage: Sendable {
         recording.appending(path: id.baseName + ".json", directoryHint: .notDirectory)
     }
 
+    var vaultIndexURL: URL {
+        vault.appending(path: "index", directoryHint: .notDirectory)
+    }
+
+    func sealedTapeURL(_ name: SealedName) -> URL {
+        vault.appending(path: name.value + ".d2pv", directoryHint: .notDirectory)
+    }
+
+    func sealedMetaURL(_ name: SealedName) -> URL {
+        vault.appending(path: name.value + ".meta", directoryHint: .notDirectory)
+    }
+
+    /// A tape being sealed, until it's complete.
+    func sealingURL(_ name: SealedName) -> URL {
+        vault.appending(path: name.value + ".part", directoryHint: .notDirectory)
+    }
+
+    /// A tape being taken out of the vault, until it's complete.
+    func unsealingURL(_ name: SealedName) -> URL {
+        unsealed.appending(path: name.value + ".part", directoryHint: .notDirectory)
+    }
+
+    /// A vault tape's plain copy for the share sheet, under its real name.
+    func sendingURL(_ id: TapeID) -> URL {
+        unsealed.appending(path: id.fileName, directoryHint: .notDirectory)
+    }
+
     /// A name for a tape starting at `date` that no tape anywhere uses yet.
     func unusedTapeID(startedAt date: Date) -> TapeID {
         var copy = 1
         while true {
             let id = TapeID(startedAt: date, copy: copy)
-            let candidates = Rack.allCases.map { tapeURL(id, in: $0) } + [recordingURL(id)]
+            let candidates = Rack.plain.map { tapeURL(id, in: $0) } + [recordingURL(id)]
             if !candidates.contains(where: { FileManager.default.fileExists(atPath: $0.path(percentEncoded: false)) }) {
                 return id
             }

@@ -1,20 +1,27 @@
 import Foundation
 import Observation
 
-/// The tapes on the deck and on the shelf, as the screens show them.
+/// The tapes on the deck, on the shelf and in the vault, as the screens show them.
 @MainActor
 @Observable
 final class TapeLibrary {
     private(set) var deck: [Tape] = []
     private(set) var shelf: [Tape] = []
+    /// Empty while the vault is locked.
+    private(set) var vault: [Tape] = []
     /// Why the last change to a tape's title or flags didn't stick, for the deck to show.
     private(set) var problem: String?
 
     @ObservationIgnored private let store: TapeStore
+    @ObservationIgnored private let vaultStore: VaultStore
     @ObservationIgnored private let heard: HeardList
+    @ObservationIgnored private var sealedFiles: [TapeID: SealedFile] = [:]
+    /// Counts locks, so a reload that started before one can't bring the vault's tapes back.
+    @ObservationIgnored private var vaultLocks = 0
 
-    init(store: TapeStore, heard: HeardList) {
+    init(store: TapeStore, vaultStore: VaultStore, heard: HeardList) {
         self.store = store
+        self.vaultStore = vaultStore
         self.heard = heard
     }
 
@@ -28,21 +35,37 @@ final class TapeLibrary {
     }
 
     func tapes(in rack: Rack, sortedBy sort: TapeSort) -> [Tape] {
-        sort.sorted(rack == .deck ? deck : shelf)
+        switch rack {
+        case .deck: sort.sorted(deck)
+        case .shelf: sort.sorted(shelf)
+        case .vault: sort.sorted(vault)
+        }
     }
 
     func tape(_ id: TapeID) -> Tape? {
-        deck.first { $0.id == id } ?? shelf.first { $0.id == id }
+        [deck, shelf, vault].lazy.joined().first { $0.id == id }
     }
 
-    /// Where the tapes' files are, to hand to the share sheet.
-    func fileURLs(of tapes: [Tape]) -> [URL] {
-        tapes.map { store.url(of: $0) }
+    /// What the player reads a vault tape from; nil while the vault is locked.
+    func sealedFile(of tape: Tape) -> SealedFile? {
+        sealedFiles[tape.id]
     }
 
     func reload() async {
+        let locksBefore = vaultLocks
         deck = await store.tapes(in: .deck, heard: heard.ids)
         shelf = await store.tapes(in: .shelf, heard: [])
+        let sealed = await vaultStore.tapes()
+        guard vaultLocks == locksBefore else { return }
+        vault = sealed.map(\.tape)
+        sealedFiles = Dictionary(sealed.map { ($0.tape.id, $0.file) }, uniquingKeysWith: { first, _ in first })
+    }
+
+    /// The vault locked: its tapes go out of sight at once.
+    func forgetVault() {
+        vaultLocks += 1
+        vault = []
+        sealedFiles = [:]
     }
 
     func markHeard(_ tapes: [Tape]) {
@@ -57,12 +80,25 @@ final class TapeLibrary {
         markHeard(deck)
     }
 
+    /// Files for the share sheet. Vault tapes are unsealed into plain copies first, which
+    /// `clearSendingCopies()` deletes once the sheet is done with them.
+    func filesToSend(_ tapes: [Tape]) async -> [URL] {
+        let plain = tapes.filter { $0.rack != .vault }.map { store.url(of: $0) }
+        let sealed = tapes.filter { $0.rack == .vault }
+        return sealed.isEmpty ? plain : plain + (await vaultStore.sendingCopies(of: sealed))
+    }
+
+    func clearSendingCopies() async {
+        await vaultStore.clearUnsealed()
+    }
+
     /// - Returns: how many tapes couldn't be deleted.
     func delete(_ tapes: [Tape]) async -> Int {
-        let failures = await store.delete(tapes)
+        let plainFailures = await store.delete(tapes.filter { $0.rack != .vault })
+        let sealedFailures = await vaultStore.erase(tapes.filter { $0.rack == .vault })
         heard.forget(tapes.map(\.id))
         await reload()
-        return failures
+        return plainFailures + sealedFailures
     }
 
     /// - Returns: how many tapes were moved to the shelf.
@@ -71,6 +107,20 @@ final class TapeLibrary {
         heard.forget(tapes.map(\.id))
         await reload()
         return moved
+    }
+
+    func lockAway(_ tapes: [Tape]) async -> LockAwayResult {
+        let result = await vaultStore.lockAway(tapes)
+        heard.forget(result.locked.map(\.id))
+        await reload()
+        return result
+    }
+
+    /// - Returns: how many tapes came out onto the shelf.
+    func takeOut(_ tapes: [Tape]) async -> Int {
+        let takenOut = await vaultStore.takeOut(tapes)
+        await reload()
+        return takenOut
     }
 
     func setTitle(_ title: String, of tape: Tape) async {
@@ -92,7 +142,11 @@ final class TapeLibrary {
     private func updateMeta(of tape: Tape, _ change: @escaping @Sendable (inout TapeMeta) -> Void) async {
         problem = nil
         do {
-            try await store.updateMeta(of: tape.id, change)
+            if tape.rack == .vault {
+                try await vaultStore.updateMeta(of: tape.id, change)
+            } else {
+                try await store.updateMeta(of: tape.id, change)
+            }
         } catch {
             problem = String(localized: "Couldn't save")
         }

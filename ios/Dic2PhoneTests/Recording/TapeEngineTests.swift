@@ -11,9 +11,8 @@ final class TapeEngineTests: XCTestCase {
     private var factory: FakeSinkFactory!
 
     override func setUpWithError() throws {
-        root = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString, directoryHint: .isDirectory)
-        storage = Storage(support: root.appending(path: "support"), documents: root.appending(path: "documents"))
-        try storage.prepare()
+        root = try URL.temporaryFolder()
+        storage = try Storage.fixture(in: root)
         factory = FakeSinkFactory()
     }
 
