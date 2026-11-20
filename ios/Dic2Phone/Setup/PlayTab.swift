@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Playback speed, and whether a faster tape sounds higher.
+/// Playback speed, whether a faster tape sounds higher, and skipping silences.
 struct PlayTab: View {
     @Environment(Settings.self) private var settings
 
@@ -17,6 +17,11 @@ struct PlayTab: View {
                 chosen: settings.tapePitch ? 1 : 0
             ) { settings.tapePitch = $0 == 1 }
             SetupHelp(text: String(localized: "NATURAL keeps voices at their own pitch at any speed. TAPE works like a real deck: faster sounds higher, slower sounds deeper."))
+            SetupToggle(
+                title: String(localized: "SKIP SILENCE"),
+                help: String(localized: "Jump over long quiet stretches (over a second) while playing. The tape itself isn't changed."),
+                isOn: settings.skipSilence
+            ) { settings.skipSilence.toggle() }
         }
     }
 }

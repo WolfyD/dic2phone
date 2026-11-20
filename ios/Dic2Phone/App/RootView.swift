@@ -30,6 +30,7 @@ struct RootView: View {
         .onChange(of: scenePhase) { sceneChanged() }
         .onChange(of: settings.playSpeed) { model.player.applySpeed() }
         .onChange(of: settings.tapePitch) { model.player.applySpeed() }
+        .onChange(of: settings.skipSilence) { model.player.prepareSkipping() }
     }
 
     @ViewBuilder

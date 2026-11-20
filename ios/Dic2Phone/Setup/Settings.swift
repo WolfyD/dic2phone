@@ -20,6 +20,7 @@ final class Settings {
     var voxSensitivity: Int { didSet { defaults.set(voxSensitivity, forKey: Key.voxSensitivity) } }
     var playSpeed: Float { didSet { defaults.set(playSpeed, forKey: Key.playSpeed) } }
     var tapePitch: Bool { didSet { defaults.set(tapePitch, forKey: Key.tapePitch) } }
+    var skipSilence: Bool { didSet { defaults.set(skipSilence, forKey: Key.skipSilence) } }
     var deckSort: TapeSort { didSet { defaults.set(deckSort.rawValue, forKey: Key.deckSort) } }
     var shelfSort: TapeSort { didSet { defaults.set(shelfSort.rawValue, forKey: Key.shelfSort) } }
     var vaultSort: TapeSort { didSet { defaults.set(vaultSort.rawValue, forKey: Key.vaultSort) } }
@@ -44,6 +45,7 @@ final class Settings {
         let storedSpeed = defaults.object(forKey: Key.playSpeed) as? Float ?? 1
         playSpeed = Settings.playSpeeds.contains(storedSpeed) ? storedSpeed : 1
         tapePitch = defaults.bool(forKey: Key.tapePitch)
+        skipSilence = defaults.bool(forKey: Key.skipSilence)
         deckSort = TapeSort(rawValue: defaults.string(forKey: Key.deckSort) ?? "") ?? .newest
         shelfSort = TapeSort(rawValue: defaults.string(forKey: Key.shelfSort) ?? "") ?? .newest
         vaultSort = TapeSort(rawValue: defaults.string(forKey: Key.vaultSort) ?? "") ?? .newest
@@ -100,6 +102,7 @@ final class Settings {
         static let voxSensitivity = "vox_sens"
         static let playSpeed = "play_speed"
         static let tapePitch = "tape_pitch"
+        static let skipSilence = "skip_silence"
         static let deckSort = "sort_deck"
         static let shelfSort = "sort_shelf"
         static let vaultSort = "sort_vault"

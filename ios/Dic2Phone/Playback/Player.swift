@@ -29,6 +29,7 @@ final class Player {
     @ObservationIgnored private var player: AVPlayer?
     /// Feeds a vault tape to the player; kept here because its item only holds it weakly.
     @ObservationIgnored private var sealedLoader: SealedAssetLoader?
+    @ObservationIgnored private let silences = SilenceSkipper()
     @ObservationIgnored private var playingDurationMs: Int64 = 0
     @ObservationIgnored private var tick: Task<Void, Never>?
     @ObservationIgnored private var winding: Task<Void, Never>?
@@ -81,11 +82,13 @@ final class Player {
         setPosition(ms, of: tape.id)
         if tape.isNew { library.markHeard([tape]) }
         startTicking()
+        prepareSkipping()
     }
 
     func stop() {
         tick?.cancel()
         tick = nil
+        silences.stop()
         if let player, let playingID {
             setPosition(Self.milliseconds(player.currentTime()), of: playingID)
             player.pause()
@@ -101,6 +104,14 @@ final class Player {
         guard let player else { return }
         player.currentItem?.audioTimePitchAlgorithm = pitchAlgorithm
         player.rate = settings.playSpeed
+    }
+
+    /// Finds the silences on the tape playing, when SKIP SILENCE is on or has just been
+    /// turned on.
+    func prepareSkipping() {
+        guard settings.skipSilence, let playingID, let tape = library.tape(playingID),
+              let source = library.source(of: tape) else { return }
+        silences.prepare(tape, from: source)
     }
 
     func load(_ tape: Tape) {
@@ -125,6 +136,7 @@ final class Player {
     /// so nothing keeps playing a vault tape once it's locked, or a file that has moved.
     func letGo(of tapes: [Tape]) {
         let ids = Set(tapes.map(\.id))
+        silences.forget(ids)
         if let playingID, ids.contains(playingID) { stop() }
         guard let loadedID, ids.contains(loadedID) else { return }
         self.loadedID = nil
@@ -212,11 +224,19 @@ final class Player {
     private func update() {
         guard let player, let playingID else { return }
         setPosition(Self.milliseconds(player.currentTime()), of: playingID)
+        skipSilence(in: player, of: playingID)
         guard player.timeControlStatus == .paused else { return }
         let ended = playingDurationMs > 0 && positionMs >= playingDurationMs - Self.endMarginMs
         let wasDeck = deckPlaying
         stop()
         if ended, wasDeck { deckPositionMs = 0 }
+    }
+
+    private func skipSilence(in player: AVPlayer, of id: TapeID) {
+        guard settings.skipSilence, player.timeControlStatus == .playing,
+              let to = silences.jump(fromMs: positionMs) else { return }
+        player.seek(to: Self.time(to), toleranceBefore: .zero, toleranceAfter: .zero)
+        setPosition(to, of: id)
     }
 
     private static func time(_ ms: Int64) -> CMTime {
