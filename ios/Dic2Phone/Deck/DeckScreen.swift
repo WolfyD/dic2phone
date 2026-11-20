@@ -46,6 +46,7 @@ struct DeckScreen: View {
             placeholder: titling.map { TapeNames.pretty($0.id) } ?? "",
             limit: TapeMeta.titleLimit,
             hint: String(localized: "Up to \(TapeMeta.titleLimit) letters"),
+            learnsWords: titling?.rack != .vault,
             onWrite: { [titling] title in
                 // Captured now: closing the alert clears `titling` before or after WRITE runs.
                 guard let titling else { return }

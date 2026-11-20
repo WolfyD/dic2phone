@@ -33,6 +33,7 @@ actor TapeStore {
                 isNew: rack == .deck && !heard.contains(id),
                 title: meta.title,
                 flags: meta.flags,
+                flagNotes: meta.flagNotes,
                 hasCaptions: FileManager.default.fileExists(atPath: storage.captionsURL(id).path(percentEncoded: false))
             ))
         }

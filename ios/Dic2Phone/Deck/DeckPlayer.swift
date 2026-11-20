@@ -1,8 +1,8 @@
 import SwiftUI
 
 /// The deck as a player for the tape that's in: the position strip with its flags, the play
-/// time, the captions, the compartment of less-used keys and the tape's info, and the transport
-/// keys unless they sit elsewhere.
+/// time and the note on the flag just passed, the captions, the compartment of less-used keys
+/// and the tape's info, and the transport keys unless they sit elsewhere.
 struct DeckPlayer: View {
     private static let compartmentKeyHeight: CGFloat = 38
 
@@ -16,9 +16,11 @@ struct DeckPlayer: View {
 
     @State private var transcribing: [Tape]?
     @State private var showingInfo = false
+    @State private var noting: Int64?
 
     var body: some View {
-        VStack(spacing: 4) {
+        let neighbours = FlagNeighbours(flags: tape.flags, positionMs: player.deckPositionMs)
+        return VStack(spacing: 4) {
             ScrubStrip(
                 durationMs: tape.durationMs,
                 positionMs: player.deckPositionMs,
@@ -32,8 +34,11 @@ struct DeckPlayer: View {
                 flags: tape.flags.count,
                 playing: player.deckPlaying
             )
+            FlagNoteLine(flag: neighbours.passed, note: neighbours.passed.flatMap { tape.flagNotes[$0] } ?? "") {
+                noting = neighbours.passed
+            }
             DeckCaptions(tape: tape)
-            compartment
+            compartment(neighbours)
             if let transport {
                 KeyBank(keys: transport, keyHeight: 52)
             }
@@ -42,11 +47,24 @@ struct DeckPlayer: View {
         .sheet(isPresented: $showingInfo) {
             TapeInfoSheet(tape: tape) { showingInfo = false }
         }
+        .labelWritingAlert(
+            isPresented: Binding { noting != nil } set: { if !$0 { noting = nil } },
+            title: String(localized: "NOTE ON THIS FLAG"),
+            original: noting.flatMap { tape.flagNotes[$0] } ?? "",
+            placeholder: "",
+            limit: TapeMeta.flagNoteLimit,
+            hint: noting.map { Glyph.flag + " " + TapeNames.duration(ms: $0) } ?? "",
+            learnsWords: tape.rack != .vault,
+            onWrite: { [noting, tape] note in
+                // Captured now: closing the alert clears `noting` before or after WRITE runs.
+                guard let noting else { return }
+                Task { await library.setFlagNote(note, at: noting, of: tape) }
+            }
+        )
     }
 
-    private var compartment: some View {
-        let neighbours = FlagNeighbours(flags: tape.flags, positionMs: player.deckPositionMs)
-        return DeckCompartment {
+    private func compartment(_ neighbours: FlagNeighbours) -> some View {
+        DeckCompartment {
             flagKey(Glyph.previousFlag, to: neighbours.previous)
                 .accessibilityLabel(Text("Previous flag"))
             flagKey(Glyph.nextFlag, to: neighbours.next)

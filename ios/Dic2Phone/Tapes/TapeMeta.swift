@@ -6,6 +6,7 @@ struct TapeMeta: Equatable, Sendable {
     static let tagsLimit = 12
     static let titleLimit = 60
     static let notesLimit = 4000
+    static let flagNoteLimit = 120
 
     var title = ""
     var notes = ""

@@ -11,6 +11,7 @@ extension Tape {
             isNew: isNew,
             title: title,
             flags: [],
+            flagNotes: [:],
             hasCaptions: false
         )
     }

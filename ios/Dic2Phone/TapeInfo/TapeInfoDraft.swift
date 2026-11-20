@@ -3,7 +3,6 @@ import Foundation
 /// What's written about a tape in TAPE INFO, as typed, before it's tidied and saved.
 struct TapeInfoDraft: Equatable, Sendable {
     static let tagsInputLimit = 300
-    static let flagNoteLimit = 120
 
     var title: String
     var notes: String
@@ -33,7 +32,7 @@ struct TapeInfoDraft: Equatable, Sendable {
         meta.notes = Self.tidy(notes, limit: TapeMeta.notesLimit)
         meta.tags = tagList
         meta.flagNotes = flagNotes
-            .mapValues { Self.tidy($0, limit: Self.flagNoteLimit) }
+            .mapValues { Self.tidy($0, limit: TapeMeta.flagNoteLimit) }
             .filter { !$0.value.isEmpty }
     }
 

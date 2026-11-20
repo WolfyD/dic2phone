@@ -91,7 +91,7 @@ struct TapeInfoSheet: View {
             TapeInfoField(
                 label: String(localized: "\(Glyph.flag) \(TapeNames.duration(ms: flag)) NOTE"),
                 text: note(at: flag, in: draft),
-                limit: TapeInfoDraft.flagNoteLimit,
+                limit: TapeMeta.flagNoteLimit,
                 learnsWords: learnsWords
             )
         }

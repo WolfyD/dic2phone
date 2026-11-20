@@ -56,6 +56,7 @@ actor VaultStore {
                 isNew: false,
                 title: meta.title,
                 flags: meta.flags,
+                flagNotes: meta.flagNotes,
                 hasCaptions: FileManager.default.fileExists(atPath: storage.sealedCaptionsURL(entry.name).path(percentEncoded: false))
             )
             return SealedTape(tape: tape, file: SealedFile(url: storage.sealedTapeURL(entry.name), key: key))

@@ -177,6 +177,12 @@ final class TapeLibrary {
         await updateMeta(of: tape) { $0.title = trimmed }
     }
 
+    /// An empty note takes the flag's note off.
+    func setFlagNote(_ note: String, at flag: Int64, of tape: Tape) async {
+        let trimmed = String(note.trimmingCharacters(in: .whitespacesAndNewlines).prefix(TapeMeta.flagNoteLimit))
+        await updateMeta(of: tape) { $0.flagNotes[flag] = trimmed.isEmpty ? nil : trimmed }
+    }
+
     func addFlag(atMs ms: Int64, to tape: Tape) async {
         await updateMeta(of: tape) { meta in
             guard !meta.flags.contains(ms) else { return }

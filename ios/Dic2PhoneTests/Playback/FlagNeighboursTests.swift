@@ -20,6 +20,13 @@ final class FlagNeighboursTests: XCTestCase {
         XCTAssertEqual(neighbours.next, 30_000)
     }
 
+    func testTheFlagJustPassedStaysForHalfAMinute() {
+        XCTAssertEqual(FlagNeighbours(flags: flags, positionMs: 19_800).passed, 20_000)
+        XCTAssertEqual(FlagNeighbours(flags: flags, positionMs: 29_000).passed, 20_000)
+        XCTAssertNil(FlagNeighbours(flags: flags, positionMs: 9_000).passed)
+        XCTAssertNil(FlagNeighbours(flags: flags, positionMs: 61_000).passed)
+    }
+
     func testNothingBeforeTheFirstFlagOrAfterTheLast() {
         XCTAssertNil(FlagNeighbours(flags: flags, positionMs: 5_000).previous)
         XCTAssertNil(FlagNeighbours(flags: flags, positionMs: 30_000).next)
