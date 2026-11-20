@@ -15,6 +15,7 @@ final class AppModel {
     let vault: Vault
     let captions: CaptionQueue
     let locator: Locator
+    let micChooser: MicChooser
 
     private let newTapeCaptions: NewTapeCaptions
     private let audioSession: AudioSession
@@ -54,6 +55,7 @@ final class AppModel {
         self.newTapeCaptions = newTapeCaptions
         let locator = Locator()
         self.locator = locator
+        micChooser = MicChooser(settings: settings, audioSession: audioSession)
         recorder = Recorder(
             settings: settings, store: store, library: library, feedback: feedback,
             audioSession: audioSession, player: player, newTapeCaptions: newTapeCaptions,

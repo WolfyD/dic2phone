@@ -26,6 +26,7 @@ struct RootView: View {
         .environment(model.vault)
         .environment(model.captions)
         .environment(model.locator)
+        .environment(model.micChooser)
         .preferredColorScheme(settings.theme.isLight ? .light : .dark)
         .task { await model.start() }
         .task { await model.stopForInterruptions() }

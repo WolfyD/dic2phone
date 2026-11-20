@@ -119,6 +119,7 @@ final class Recorder {
         feedback.stopHiss()
         state = RecorderState()
         guard let engine = session.engine else {
+            audioSession.finishRecording()
             feedback.recStop()
             return
         }
@@ -142,6 +143,7 @@ final class Recorder {
         guard isCurrent(session) else { return }
         let mic = makeMic()
         let chunks: AsyncStream<[Int16]>
+        audioSession.useMicrophone(settings.microphone)
         do {
             try audioSession.activate()
             chunks = try mic.start()
@@ -197,6 +199,7 @@ final class Recorder {
     private func close(_ session: RecordingSession, engine: TapeEngine) async {
         await engine.stop()
         session.mic?.stop()
+        audioSession.finishRecording()
         await session.feedTask?.value
         await handle(engine.close(), from: session)
         feedback.recStop()

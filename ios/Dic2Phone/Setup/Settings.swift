@@ -6,6 +6,7 @@ import Observation
 @Observable
 final class Settings {
     static let labelLimit = 40
+    private static let microphoneKeyLimit = 40
     static let playSpeeds: [Float] = [0.75, 1, 1.25, 1.5, 2]
     static let voxSensitivities = 0...2
     private static let maxTapeSecondsRange = 10...3600
@@ -35,6 +36,8 @@ final class Settings {
     var vaultSort: TapeSort { didSet { defaults.set(vaultSort.rawValue, forKey: Key.vaultSort) } }
     var deckTape: TapeID? { didSet { defaults.set(deckTape?.fileName ?? "", forKey: Key.deckTape) } }
     var minidisc: Bool { didSet { defaults.set(minidisc, forKey: Key.minidisc) } }
+    /// A `Microphone` key; empty lets iOS choose.
+    var microphone: String { didSet { defaults.set(microphone, forKey: Key.microphone) } }
     /// WHERE RECORDED.
     var notesPlace: Bool { didSet { defaults.set(notesPlace, forKey: Key.location) } }
     var labelTyped: Bool { didSet { defaults.set(labelTyped, forKey: Key.labelTyped) } }
@@ -75,6 +78,7 @@ final class Settings {
         vaultSort = TapeSort(rawValue: defaults.string(forKey: Key.vaultSort) ?? "") ?? .newest
         deckTape = defaults.string(forKey: Key.deckTape).flatMap(TapeID.init)
         minidisc = defaults.bool(forKey: Key.minidisc)
+        microphone = String((defaults.string(forKey: Key.microphone) ?? "").prefix(Settings.microphoneKeyLimit))
         notesPlace = defaults.bool(forKey: Key.location)
         labelTyped = defaults.bool(forKey: Key.labelTyped)
         speechModel = SpeechModel(rawValue: defaults.string(forKey: Key.speechModel) ?? "")
@@ -157,6 +161,7 @@ final class Settings {
         static let minidisc = "minidisc"
         static let labelTyped = "label_typed"
         static let location = "location"
+        static let microphone = "mic"
         static let speechModel = "cc_model"
         static let captionLanguage = "cc_lang"
         static let autoCaptions = "auto_cc"

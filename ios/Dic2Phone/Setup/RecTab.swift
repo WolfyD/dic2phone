@@ -8,6 +8,7 @@ struct RecTab: View {
     var body: some View {
         VStack(spacing: 10) {
             recordingPanel
+            MicPanel()
             soundPanel
         }
     }
@@ -40,7 +41,7 @@ struct RecTab: View {
             isOn: settings.notesPlace && locator.isAllowed
         ) { toggleWhereRecorded() }
         if settings.notesPlace, locator.isRefused {
-            SetupHelp(text: String(localized: "Location access is off, so tapes won't get a place. Turn it on in Settings › Dic2Phone › Location."))
+            SetupHelp(text: String(localized: "Location access is off, so tapes won't get a place. Turn it on in Settings › Dic2Phone › Location."), warning: true)
         }
     }
 
