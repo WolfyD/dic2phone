@@ -2,7 +2,7 @@ import Foundation
 import Observation
 
 /// A tape list's state and what its keys do: the selection, a question or share sheet waiting
-/// to open, and the short note left after an action.
+/// to open, a transcript being read, and the short note left after an action.
 @MainActor
 @Observable
 final class TapeListModel {
@@ -14,11 +14,16 @@ final class TapeListModel {
     var notice: String?
     /// What a long job is doing, shown in place of the keys until it's done.
     private(set) var busy: String?
+    /// Shown in place of the list while set.
+    private(set) var reading: TranscriptModel?
+    /// Tapes to transcribe, once a speech model has been picked if none has.
+    var transcribing: [Tape]?
 
     @ObservationIgnored private let settings: Settings
     @ObservationIgnored private let library: TapeLibrary
     @ObservationIgnored private let player: Player
     @ObservationIgnored private let vault: Vault
+    @ObservationIgnored private let captions: CaptionQueue
     @ObservationIgnored private let navigate: (Screen) -> Void
 
     init(
@@ -27,6 +32,7 @@ final class TapeListModel {
         library: TapeLibrary,
         player: Player,
         vault: Vault,
+        captions: CaptionQueue,
         navigate: @escaping (Screen) -> Void
     ) {
         self.mode = mode
@@ -34,6 +40,7 @@ final class TapeListModel {
         self.library = library
         self.player = player
         self.vault = vault
+        self.captions = captions
         self.navigate = navigate
     }
 
@@ -69,6 +76,10 @@ final class TapeListModel {
         tapes.filter { selected.contains($0.id) }
     }
 
+    var waitingForTranscripts: Set<TapeID> {
+        captions.waitingTapes
+    }
+
     func cycleSort() {
         settings.cycleSort(for: mode.rack)
     }
@@ -79,6 +90,10 @@ final class TapeListModel {
 
     func openVaultScreen() {
         navigate(.vault)
+    }
+
+    func openSearch() {
+        navigate(.search(returningTo: mode.screen))
     }
 
     /// Leaving the list stops its tape, as on Android.
@@ -140,6 +155,30 @@ final class TapeListModel {
         }
         self.sharing = nil
         selected = []
+    }
+
+    /// TEXT on one transcribed tape opens its transcript; otherwise the tapes without one are
+    /// transcribed.
+    func text(_ tapes: [Tape]) {
+        if tapes.count == 1, let tape = tapes.first, tape.hasCaptions {
+            read(tape)
+            return
+        }
+        let waiting = captions.waitingTapes
+        let needed = tapes.filter { !$0.hasCaptions && !waiting.contains($0.id) }
+        guard !needed.isEmpty else {
+            notice = String(localized: "Already transcribed. Select one tape to read it.")
+            return
+        }
+        transcribing = needed
+        selected = []
+    }
+
+    func read(_ tape: Tape) {
+        selected = []
+        reading = TranscriptModel(tape: tape, library: library, player: player, captions: captions) { [weak self] in
+            self?.reading = nil
+        }
     }
 
     func shelve(_ tapes: [Tape]) {

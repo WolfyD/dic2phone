@@ -74,6 +74,10 @@ struct ShelfSpineRow: View {
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
+            if tape.hasCaptions || state.transcribing {
+                TranscriptBadge(transcribing: state.transcribing, ink: palette.ink)
+                    .padding(.trailing, 8)
+            }
             Text(verbatim: TapeNames.duration(ms: tape.durationMs))
                 .font(DeckFont.mono.fixed(12))
                 .foregroundStyle(palette.ink)

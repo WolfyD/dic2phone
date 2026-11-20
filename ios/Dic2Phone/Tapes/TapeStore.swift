@@ -14,6 +14,10 @@ actor TapeStore {
         storage.tapeURL(tape.id, in: tape.rack)
     }
 
+    nonisolated func captionsURL(of tape: Tape) -> URL {
+        storage.captionsURL(tape.id)
+    }
+
     func tapes(in rack: Rack, heard: Set<TapeID>) async -> [Tape] {
         var tapes: [Tape] = []
         for id in storage.tapeIDs(in: storage.folder(for: rack)) {

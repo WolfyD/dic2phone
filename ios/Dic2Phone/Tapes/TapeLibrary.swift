@@ -11,6 +11,8 @@ final class TapeLibrary {
     private(set) var vault: [Tape] = []
     /// Why the last change to a tape's title or flags didn't stick, for the deck to show.
     private(set) var problem: String?
+    /// Captions read so far. Those of vault tapes are dropped when the vault locks.
+    private(set) var transcripts: [TapeID: Transcript] = [:]
 
     @ObservationIgnored private let store: TapeStore
     @ObservationIgnored private let vaultStore: VaultStore
@@ -58,9 +60,15 @@ final class TapeLibrary {
         return sealedFiles[tape.id].map(TapeSource.sealed)
     }
 
-    /// Nil if the tape has no captions yet, or it's in the vault and the vault is locked.
-    func transcript(of tape: Tape) async -> Transcript? {
-        tape.rack == .vault ? await vaultStore.transcript(of: tape.id) : await store.transcript(of: tape.id)
+    /// Reads the tape's captions into `transcripts`, unless they're there already.
+    func loadTranscript(of tape: Tape) async {
+        guard tape.hasCaptions, transcripts[tape.id] == nil else { return }
+        let locksBefore = vaultLocks
+        let transcript = tape.rack == .vault
+            ? await vaultStore.transcript(of: tape.id)
+            : await store.transcript(of: tape.id)
+        guard vaultLocks == locksBefore else { return }
+        transcripts[tape.id] = transcript
     }
 
     func saveTranscript(_ transcript: Transcript, for tape: Tape) async throws {
@@ -69,6 +77,7 @@ final class TapeLibrary {
         } else {
             try await store.saveTranscript(transcript, for: tape.id)
         }
+        transcripts[tape.id] = transcript
         await reload()
     }
 
@@ -80,6 +89,7 @@ final class TapeLibrary {
         guard vaultLocks == locksBefore else { return }
         vault = sealed.map(\.tape)
         sealedFiles = Dictionary(sealed.map { ($0.tape.id, $0.file) }, uniquingKeysWith: { first, _ in first })
+        transcripts = transcripts.filter { tape($0.key)?.hasCaptions == true }
     }
 
     /// The vault locked: its tapes go out of sight at once.
@@ -87,6 +97,7 @@ final class TapeLibrary {
         vaultLocks += 1
         vault = []
         sealedFiles = [:]
+        transcripts = transcripts.filter { tape($0.key) != nil }
     }
 
     func markHeard(_ tapes: [Tape]) {
@@ -107,6 +118,13 @@ final class TapeLibrary {
         let plain = tapes.filter { $0.rack != .vault }.map { store.url(of: $0) }
         let sealed = tapes.filter { $0.rack == .vault }
         return sealed.isEmpty ? plain : plain + (await vaultStore.sendingCopies(of: sealed))
+    }
+
+    /// The tape's captions as an .srt file for the share sheet. A vault tape's is a plain copy,
+    /// which `clearSendingCopies()` deletes.
+    func captionsToSend(of tape: Tape) async -> URL? {
+        guard tape.hasCaptions else { return nil }
+        return tape.rack == .vault ? await vaultStore.sendingCaptions(of: tape.id) : store.captionsURL(of: tape)
     }
 
     func clearSendingCopies() async {

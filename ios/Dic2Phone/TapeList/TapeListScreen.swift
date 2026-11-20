@@ -16,8 +16,20 @@ struct TapeListScreen: View {
     }
 
     var body: some View {
+        Group {
+            if let reading = model.reading {
+                TranscriptScreen(model: reading)
+            } else {
+                tapesView
+            }
+        }
+        .onDisappear(perform: model.leave)
+        .transcribeRequest($model.transcribing)
+    }
+
+    private var tapesView: some View {
         let tapes = model.tapes
-        VStack(spacing: 10) {
+        return VStack(spacing: 10) {
             header(tapes)
             if !tapes.isEmpty {
                 hintRow(count: tapes.count)
@@ -25,8 +37,9 @@ struct TapeListScreen: View {
             list(tapes)
                 .frame(maxHeight: .infinity)
             if let playing = tapes.first(where: { $0.id == player.playingID }) {
-                NowPlaying(tape: playing)
+                NowPlaying(tape: playing) { model.read(playing) }
             }
+            CaptionStatusStrip()
             if model.mode == .shelf {
                 VaultBar(isOpen: model.vaultIsOpen, count: model.vaultCount, action: model.openVaultScreen)
             }
@@ -38,7 +51,6 @@ struct TapeListScreen: View {
             TapeListKeys(model: model)
         }
         .padding(12)
-        .onDisappear(perform: model.leave)
         .task(id: model.notice) {
             guard model.notice != nil else { return }
             try? await Task.sleep(for: Self.noticeDuration)
@@ -55,7 +67,7 @@ struct TapeListScreen: View {
             Text(verbatim: request.message)
         }
         .sheet(isPresented: Binding { model.sharing != nil } set: { if !$0 { model.finishSharing(sent: false) } }) {
-            ShareSheet(files: model.sharing?.files ?? [], onFinish: model.finishSharing)
+            ShareSheet(items: model.sharing?.files ?? [], onFinish: model.finishSharing)
                 .presentationDetents([.medium, .large])
         }
     }
@@ -72,6 +84,9 @@ struct TapeListScreen: View {
                     .lineLimit(1)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
+            DeckKey(label: Glyph.search, height: 40, action: model.openSearch)
+                .frame(width: 48)
+                .accessibilityLabel(Text("Search transcripts"))
         }
     }
 
@@ -131,30 +146,37 @@ struct TapeListScreen: View {
 
     @ViewBuilder
     private func rack(_ tapes: [Tape]) -> some View {
+        let waiting = model.waitingForTranscripts
         switch model.mode.rack {
         case .deck:
             CarryCase {
                 ForEach(tapes) { tape in
-                    TapeCaseRow(tape: tape, state: rowState(of: tape), loadMode: model.mode == .load, actions: rowActions(for: tape))
+                    TapeCaseRow(
+                        tape: tape,
+                        state: rowState(of: tape, waiting: waiting),
+                        loadMode: model.mode == .load,
+                        actions: rowActions(for: tape)
+                    )
                 }
             }
         case .shelf, .vault:
             ShelfRack(material: model.mode.rack == .vault ? .steel : .wood) {
                 ForEach(tapes) { tape in
-                    ShelfSpineRow(tape: tape, state: rowState(of: tape), actions: rowActions(for: tape))
+                    ShelfSpineRow(tape: tape, state: rowState(of: tape, waiting: waiting), actions: rowActions(for: tape))
                 }
             }
         }
     }
 
-    private func rowState(of tape: Tape) -> TapeRowState {
+    private func rowState(of tape: Tape, waiting: Set<TapeID>) -> TapeRowState {
         let playing = player.playingID == tape.id
         let progress = playing && tape.durationMs > 0 ? CGFloat(player.positionMs) / CGFloat(tape.durationMs) : 0
         return TapeRowState(
             selected: model.selected.contains(tape.id),
             playing: playing,
             progress: progress,
-            inDeck: player.loadedID == tape.id
+            inDeck: player.loadedID == tape.id,
+            transcribing: waiting.contains(tape.id)
         )
     }
 

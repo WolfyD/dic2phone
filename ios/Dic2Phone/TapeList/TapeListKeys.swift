@@ -58,6 +58,7 @@ struct TapeListKeys: View {
             }
             KeyRow {
                 DeckKey(label: String(localized: "SEND \(selection.count)")) { model.send(selection) }
+                DeckKey(label: String(localized: "TEXT")) { model.text(selection) }
                 DeckKey(label: Glyph.close, action: model.clearSelection)
                     .layoutWeight(0.4)
                     .accessibilityLabel(Text("Clear selection"))

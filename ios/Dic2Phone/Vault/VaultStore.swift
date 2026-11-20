@@ -153,6 +153,19 @@ actor VaultStore {
         }
     }
 
+    /// A plain copy of a vault tape's captions as an .srt file, for the share sheet; like the
+    /// tapes' copies, it stays until `clearUnsealed()`.
+    func sendingCaptions(of id: TapeID) -> URL? {
+        guard let transcript = transcript(of: id) else { return nil }
+        let copy = storage.sendingCaptionsURL(id)
+        do {
+            try Data(SubRip.text(of: transcript.cues).utf8).write(to: copy, options: [.atomic, .completeFileProtectionUnlessOpen])
+            return copy
+        } catch {
+            return nil
+        }
+    }
+
     /// Deletes every plain copy: sent ones, and any left by a take-out that was cut off.
     func clearUnsealed() {
         removeContents(of: storage.unsealed)

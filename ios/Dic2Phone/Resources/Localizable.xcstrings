@@ -33,6 +33,28 @@
         }
       }
     },
+    "%lld transcribed tapes" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld transcribed tape"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld transcribed tapes"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "All %lld tapes on the deck will be deleted. Tapes on the shelf are kept." : {
       "localizations" : {
         "en" : {

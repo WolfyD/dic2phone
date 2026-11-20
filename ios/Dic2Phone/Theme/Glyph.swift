@@ -15,6 +15,7 @@ enum Glyph {
     static let close = "✕"
     static let sort = "↕\u{FE0E}"
     static let back = "◀\u{FE0E}"
+    static let search = "⌕"
     static let chosen = "●"
     static let notChosen = "○"
     static let folded = "▸"

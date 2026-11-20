@@ -1,14 +1,15 @@
 import SwiftUI
 import UIKit
 
-/// The system share sheet for tape files. SwiftUI's ShareLink can't be opened from a key, and
-/// doesn't say whether anything was sent.
+/// The system share sheet, for tape files or a transcript. SwiftUI's ShareLink can't be opened
+/// from a key, and doesn't say whether anything was sent.
 struct ShareSheet: UIViewControllerRepresentable {
-    let files: [URL]
+    /// File URLs or text.
+    let items: [Any]
     let onFinish: (_ sent: Bool) -> Void
 
     func makeUIViewController(context: Context) -> UIActivityViewController {
-        let controller = UIActivityViewController(activityItems: files, applicationActivities: nil)
+        let controller = UIActivityViewController(activityItems: items, applicationActivities: nil)
         controller.completionWithItemsHandler = { _, sent, _, _ in onFinish(sent) }
         return controller
     }

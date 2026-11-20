@@ -84,6 +84,10 @@ struct TapeCaseRow: View {
             TapeBadge(text: String(localized: "NEW"), foreground: .white, background: palette.danger)
                 .padding(.trailing, 6)
         }
+        if tape.hasCaptions || state.transcribing {
+            TranscriptBadge(transcribing: state.transcribing, ink: palette.ink)
+                .padding(.trailing, 8)
+        }
     }
 
     private var stateGlyph: String {

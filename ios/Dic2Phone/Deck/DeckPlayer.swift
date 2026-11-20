@@ -24,6 +24,7 @@ struct DeckPlayer: View {
                 flags: tape.flags.count,
                 playing: player.deckPlaying
             )
+            DeckCaptions(tape: tape)
             if let transport {
                 KeyBank(keys: transport, keyHeight: 52)
             }

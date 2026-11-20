@@ -13,6 +13,7 @@ struct DeckScreen: View {
     @Environment(Recorder.self) private var recorder
     @Environment(Player.self) private var player
     @Environment(FlagKey.self) private var flagKey
+    @Environment(CaptionQueue.self) private var captions
     @Environment(\.palette) private var palette
     @Environment(\.keyClick) private var keyClick
     @Environment(\.verticalSizeClass) private var verticalSizeClass
@@ -184,13 +185,17 @@ struct DeckScreen: View {
         if recorder.state.recording {
             RecStatus(state: recorder.state)
         }
-        if let problem = recorder.state.error ?? library.problem {
+        if let problem = recorder.state.error ?? library.problem ?? captionProblem {
             Text(verbatim: "\(Glyph.warning) \(problem)")
                 .font(DeckFont.mono.fixed(12))
                 .foregroundStyle(palette.accent)
                 .lineLimit(2)
                 .multilineTextAlignment(.center)
         }
+    }
+
+    private var captionProblem: String? {
+        captions.lastError.map { String(localized: "TRANSCRIBING FAILED: \($0)") }
     }
 
     /// With a tape in, its title; with none, the deck's own label.

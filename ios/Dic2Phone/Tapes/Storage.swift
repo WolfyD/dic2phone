@@ -124,6 +124,11 @@ struct Storage: Sendable {
         unsealed.appending(path: id.fileName, directoryHint: .notDirectory)
     }
 
+    /// A plain copy of a vault tape's captions for the share sheet.
+    func sendingCaptionsURL(_ id: TapeID) -> URL {
+        unsealed.appending(path: id.baseName + ".srt", directoryHint: .notDirectory)
+    }
+
     /// A name for a tape starting at `date` that no tape anywhere uses yet.
     func unusedTapeID(startedAt date: Date) -> TapeID {
         var copy = 1

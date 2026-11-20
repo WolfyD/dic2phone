@@ -3,7 +3,7 @@ import Foundation
 /// A tape's captions, in order. Empty when no speech was found on the tape.
 struct Transcript: Equatable, Sendable {
     /// A caption stays up this long after it ends, so short pauses don't make it flicker.
-    private static let lingerMs: Int64 = 1500
+    static let lingerMs: Int64 = 1500
     /// A pause this long starts a new paragraph in the readable text.
     private static let paragraphPauseMs: Int64 = 2500
 

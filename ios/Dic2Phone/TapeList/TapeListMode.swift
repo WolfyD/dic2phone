@@ -33,6 +33,15 @@ enum TapeListMode {
         }
     }
 
+    var screen: Screen {
+        switch self {
+        case .deck: .tapes
+        case .load: .load
+        case .shelf: .shelf
+        case .vault: .vault
+        }
+    }
+
     /// Where the back key goes: the vault is a compartment of the shelf.
     var back: Screen {
         self == .vault ? .shelf : .deck

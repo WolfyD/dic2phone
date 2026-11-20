@@ -40,6 +40,7 @@ struct RootView: View {
         case .shelf: tapeList(.shelf)
         case .vault: tapeList(.vault)
         case .setup: SetupScreen(navigate: navigate)
+        case .search(let back): search(returningTo: back)
         }
     }
 
@@ -50,8 +51,15 @@ struct RootView: View {
             library: model.library,
             player: model.player,
             vault: model.vault,
+            captions: model.captions,
             navigate: navigate
         ))
+    }
+
+    private func search(returningTo back: Screen) -> SearchScreen {
+        SearchScreen(model: SearchModel(library: model.library, player: model.player, vault: model.vault) {
+            navigate(to: back)
+        })
     }
 
     /// Leaving locks the vault; not just going inactive, which the Face ID sheet does.
