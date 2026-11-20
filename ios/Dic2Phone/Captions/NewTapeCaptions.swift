@@ -4,14 +4,12 @@ import UIKit
 @MainActor
 final class NewTapeCaptions {
     private let settings: Settings
-    private let models: ModelStore
     private let library: TapeLibrary
     private let queue: CaptionQueue
     private var waiting: [TapeID] = []
 
-    init(settings: Settings, models: ModelStore, library: TapeLibrary, queue: CaptionQueue) {
+    init(settings: Settings, library: TapeLibrary, queue: CaptionQueue) {
         self.settings = settings
-        self.models = models
         self.library = library
         self.queue = queue
     }
@@ -32,7 +30,7 @@ final class NewTapeCaptions {
         defer { waiting = [] }
         guard settings.autoCaptions == .afterRecording,
               let model = settings.speechModel,
-              models.isDownloaded(model)
+              queue.downloadedModels.contains(model)
         else { return }
         queue.transcribe(waiting.compactMap { library.tape($0) })
     }

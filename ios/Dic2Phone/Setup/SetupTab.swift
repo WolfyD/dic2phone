@@ -5,6 +5,7 @@ enum SetupTab: CaseIterable {
     case look
     case rec
     case play
+    case text
     case more
 
     var label: String {
@@ -12,6 +13,7 @@ enum SetupTab: CaseIterable {
         case .look: String(localized: "LOOK")
         case .rec: String(localized: "REC")
         case .play: String(localized: "PLAY")
+        case .text: String(localized: "TEXT")
         case .more: String(localized: "MORE")
         }
     }

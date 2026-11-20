@@ -9,6 +9,7 @@ import Observation
 final class CaptionQueue {
     private(set) var status: CaptionStatus?
     private(set) var lastError: String?
+    private(set) var downloadedModels: Set<SpeechModel> = []
     private var jobs: [CaptionJob] = []
     private var current: CaptionJob?
 
@@ -25,6 +26,7 @@ final class CaptionQueue {
         self.settings = settings
         self.library = library
         self.models = models
+        checkDownloads()
     }
 
     var isBusy: Bool { current != nil || !jobs.isEmpty }
@@ -45,7 +47,7 @@ final class CaptionQueue {
     }
 
     func fetch(_ model: SpeechModel) {
-        guard !models.isDownloaded(model), !waitingModels.contains(model) else { return }
+        guard !downloadedModels.contains(model), !waitingModels.contains(model) else { return }
         add([.fetch(model)])
     }
 
@@ -57,6 +59,13 @@ final class CaptionQueue {
         current = nil
         finishedJobs = 0
         status = nil
+    }
+
+    /// Transcripts already made stay.
+    func deleteModels() {
+        guard !isBusy else { return }
+        models.deleteAll()
+        checkDownloads()
     }
 
     /// The vault locked: its tapes leave the queue, and one being listened to is stopped, so
@@ -83,6 +92,7 @@ final class CaptionQueue {
         while run == self.run, !jobs.isEmpty {
             current = jobs.removeFirst()
             if let job = current { await perform(job, run: run, loaded: &loaded) }
+            checkDownloads()
             guard run == self.run else { return }
             finishedJobs += 1
             current = nil
@@ -91,6 +101,10 @@ final class CaptionQueue {
         worker = nil
         finishedJobs = 0
         status = nil
+    }
+
+    private func checkDownloads() {
+        downloadedModels = Set(SpeechModel.allCases.filter(models.isDownloaded))
     }
 
     private func perform(_ job: CaptionJob, run: Int, loaded: inout LoadedSpeechModel?) async {

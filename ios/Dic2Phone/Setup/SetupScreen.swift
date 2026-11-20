@@ -46,6 +46,7 @@ struct SetupScreen: View {
         case .look: LookTab()
         case .rec: RecTab()
         case .play: PlayTab()
+        case .text: TextTab()
         case .more:
             VStack(spacing: 10) {
                 AboutPanel()

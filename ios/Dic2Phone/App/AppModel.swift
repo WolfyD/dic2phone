@@ -13,7 +13,6 @@ final class AppModel {
     let flagKey: FlagKey
     let vault: Vault
     let captions: CaptionQueue
-    let models: ModelStore
 
     private let newTapeCaptions: NewTapeCaptions
     private let audioSession: AudioSession
@@ -35,14 +34,13 @@ final class AppModel {
         // Ephemeral: nothing about the download is kept in a cache or cookie store.
         let models = ModelStore(storage: storage, session: URLSession(configuration: .ephemeral))
         let captions = CaptionQueue(settings: settings, library: library, models: models)
-        let newTapeCaptions = NewTapeCaptions(settings: settings, models: models, library: library, queue: captions)
+        let newTapeCaptions = NewTapeCaptions(settings: settings, library: library, queue: captions)
         self.settings = settings
         self.library = library
         self.feedback = feedback
         self.player = player
         self.audioSession = audioSession
         self.vaultStore = vaultStore
-        self.models = models
         self.captions = captions
         self.newTapeCaptions = newTapeCaptions
         recorder = Recorder(
