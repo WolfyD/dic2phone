@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Playback speed, whether a faster tape sounds higher, and skipping silences.
+/// Playback speed, whether a faster tape sounds higher, skipping silences, and winding.
 struct PlayTab: View {
     @Environment(Settings.self) private var settings
 
@@ -22,6 +22,11 @@ struct PlayTab: View {
                 help: String(localized: "Jump over long quiet stretches (over a second) while playing. The tape itself isn't changed."),
                 isOn: settings.skipSilence
             ) { settings.skipSilence.toggle() }
+            SetupToggle(
+                title: String(localized: "TAPE WIND"),
+                help: String(localized: "Hold REW / FF to wind the tape like a real deck, motor whirr and all (a tap still skips 10 s)."),
+                isOn: settings.tapeWind
+            ) { settings.tapeWind.toggle() }
         }
     }
 }

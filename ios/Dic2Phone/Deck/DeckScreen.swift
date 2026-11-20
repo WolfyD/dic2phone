@@ -12,6 +12,7 @@ struct DeckScreen: View {
     @Environment(TapeLibrary.self) private var library
     @Environment(Recorder.self) private var recorder
     @Environment(Player.self) private var player
+    @Environment(DeckWinder.self) private var winder
     @Environment(FlagKey.self) private var flagKey
     @Environment(CaptionQueue.self) private var captions
     @Environment(\.palette) private var palette
@@ -62,7 +63,7 @@ struct DeckScreen: View {
 
     private var keys: DeckKeys {
         DeckKeys(
-            recorder: recorder, player: player, flagKey: flagKey,
+            recorder: recorder, player: player, winder: winder, flagKey: flagKey,
             palette: palette, keyClick: keyClick, navigate: navigate
         )
     }
@@ -146,7 +147,7 @@ struct DeckScreen: View {
     private func cassette(elapsedMs: Int64) -> some View {
         CassetteView(
             label: cassetteLabel,
-            spinning: recorder.state.tapeMoving || player.deckPlaying,
+            spinning: recorder.state.tapeMoving || player.deckPlaying || winder.isWinding,
             progress: cassetteProgress(elapsedMs: elapsedMs),
             typed: settings.labelTyped
         )

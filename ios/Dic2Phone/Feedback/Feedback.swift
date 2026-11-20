@@ -1,6 +1,7 @@
 import AVFoundation
 
-/// The deck's key sounds, the haptics that go with them, and the faint hiss while recording.
+/// The deck's key sounds, the haptics that go with them, the faint hiss while recording, and
+/// the motor's whirr while TAPE WIND winds.
 @MainActor
 final class Feedback {
     /// The REC sound's length plus a margin: recording starts after it, so the click isn't on tape.
@@ -13,12 +14,14 @@ final class Feedback {
     private static let hissOnSpeakerAtReferenceVolume: Float = 0.035
     private static let referenceVolume: Float = 0.6
     private static let hissFadeIn: TimeInterval = 0.4
+    private static let windVolume: Float = 0.5
 
     private let settings: Settings
     private let audioSession: AudioSession
     private let haptics: Haptics
     private var players: [DeckSound: AVAudioPlayer] = [:]
     private var hissPlayer: AVAudioPlayer?
+    private var windPlayer: AVAudioPlayer?
 
     init(settings: Settings, audioSession: AudioSession, haptics: Haptics) {
         self.settings = settings
@@ -80,6 +83,35 @@ final class Feedback {
     func stopHiss() {
         hissPlayer?.stop()
         hissPlayer = nil
+    }
+
+    /// The reels start turning: the motor whirrs until `windStop()`.
+    func windStart() {
+        guard windPlayer == nil, settings.sounds,
+              let player = try? AVAudioPlayer(data: SynthSounds.wind().wavData)
+        else { return }
+        player.enableRate = true
+        player.numberOfLoops = -1
+        windPlayer = player
+        windSpeed(0)
+        player.play()
+    }
+
+    /// The motor spinning up, from 0 to 1: the whirr rises in pitch and level.
+    func windSpeed(_ spinUp: Double) {
+        windPlayer?.rate = Float(0.8 + 0.35 * spinUp)
+        windPlayer?.volume = Self.windVolume * Float(0.65 + 0.35 * spinUp)
+    }
+
+    func windStop() {
+        windPlayer?.stop()
+        windPlayer = nil
+    }
+
+    /// Wound to the end of the tape: the whirr stops and the mechanism clunks off.
+    func windEnd() {
+        windStop()
+        play(.windEnd)
     }
 
     private var hissVolume: Float {

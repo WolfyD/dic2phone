@@ -21,6 +21,7 @@ struct RootView: View {
         .environment(model.library)
         .environment(model.recorder)
         .environment(model.player)
+        .environment(model.winder)
         .environment(model.flagKey)
         .environment(model.vault)
         .environment(model.captions)

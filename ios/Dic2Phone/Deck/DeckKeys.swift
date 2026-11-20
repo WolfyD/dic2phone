@@ -6,6 +6,7 @@ import SwiftUI
 struct DeckKeys {
     let recorder: Recorder
     let player: Player
+    let winder: DeckWinder
     let flagKey: FlagKey
     let palette: Palette
     let keyClick: KeyClick
@@ -63,14 +64,13 @@ struct DeckKeys {
         return String(localized: "\(Glyph.rec) HOLD·TAP=LOCK")
     }
 
-    /// One tap winds ten seconds; holding keeps winding until the key is let go.
     private func wind(forward: Bool) -> KeyAction {
         .hold(
             press: {
                 keyClick()
-                player.startWinding(forward: forward)
+                winder.press(forward: forward)
             },
-            release: player.stopWinding
+            release: winder.release
         )
     }
 }

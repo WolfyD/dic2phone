@@ -11,9 +11,6 @@ final class Player {
     /// playing the last fraction of a second.
     private static let endMarginMs: Int64 = 300
     private static let seekEndMarginMs: Int64 = 200
-    private static let windStepMs: Int64 = 10_000
-    private static let windRepeatDelay: Duration = .milliseconds(450)
-    private static let windRepeatInterval: Duration = .milliseconds(160)
 
     private(set) var playingID: TapeID?
     private(set) var positionMs: Int64 = 0
@@ -32,7 +29,6 @@ final class Player {
     @ObservationIgnored private let silences = SilenceSkipper()
     @ObservationIgnored private var playingDurationMs: Int64 = 0
     @ObservationIgnored private var tick: Task<Void, Never>?
-    @ObservationIgnored private var winding: Task<Void, Never>?
 
     init(settings: Settings, store: TapeStore, library: TapeLibrary, feedback: Feedback, audioSession: AudioSession) {
         self.settings = settings
@@ -154,6 +150,12 @@ final class Player {
         }
     }
 
+    /// Plays the deck's tape on from where it is, unless it's at the end.
+    func playOn() {
+        guard let tape = loaded, !deckPlaying, deckPositionMs < tape.durationMs - Self.endMarginMs else { return }
+        play(tape, fromMs: deckPositionMs)
+    }
+
     func seek(toMs ms: Int64) {
         guard let tape = loaded else { return }
         let clamped = min(max(ms, 0), max(tape.durationMs - Self.seekEndMarginMs, 0))
@@ -172,25 +174,6 @@ final class Player {
 
     func skip(byMs deltaMs: Int64) {
         seek(toMs: deckPositionMs + deltaMs)
-    }
-
-    /// REW or FF pressed: winds ten seconds at once, then on and on for as long as it's held.
-    func startWinding(forward: Bool) {
-        let step = forward ? Self.windStepMs : -Self.windStepMs
-        skip(byMs: step)
-        winding?.cancel()
-        winding = Task { [weak self] in
-            try? await Task.sleep(for: Self.windRepeatDelay)
-            while !Task.isCancelled {
-                self?.skip(byMs: step)
-                try? await Task.sleep(for: Self.windRepeatInterval)
-            }
-        }
-    }
-
-    func stopWinding() {
-        winding?.cancel()
-        winding = nil
     }
 
     private func makeItem(for tape: Tape) -> AVPlayerItem? {

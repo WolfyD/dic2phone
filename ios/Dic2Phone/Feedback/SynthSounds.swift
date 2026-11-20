@@ -85,19 +85,40 @@ enum SynthSounds {
         return SoundClip(signal, sampleRate: hissRate, fullScale: 32_767)
     }
 
-    /// Mostly-highs noise (rumble removed, the very top softened around 9 kHz), with its
-    /// overrun cross-faded into the start so `count` samples loop seamlessly.
+    /// One second of motor whirr, a seamless loop: whole cycles of hum over low, rumbling noise.
+    static func wind() -> SoundClip {
+        let count = keyRate
+        var random = SeededRandom(seed: 11)
+        var lowPassed: Float = 0
+        let noise = loopable(count: count, crossfade: keyRate / 10) {
+            lowPassed += 0.15 * (random.signed() - lowPassed)
+            return lowPassed
+        }
+        let signal = (0..<count).map { i -> Float in
+            let t = Double(i) / Double(keyRate)
+            let hum = 0.10 * Float(sin(2 * .pi * 180 * t)) + 0.05 * Float(sin(2 * .pi * 360 * t))
+            return min(max(noise[i] * 0.6 + hum, -1), 1)
+        }
+        return SoundClip(signal, sampleRate: keyRate, fullScale: 30_000)
+    }
+
+    /// Mostly-highs noise: rumble removed, the very top softened around 9 kHz.
     private static func loopableHiss(count: Int) -> [Float] {
-        let crossfade = hissRate / 10
         var random = SeededRandom(seed: 42)
         var rumble: Float = 0
         var softened: Float = 0
-        var noise = (0..<(count + crossfade)).map { _ -> Float in
+        return loopable(count: count, crossfade: hissRate / 10) {
             let white = random.signed()
             rumble += 0.08 * (white - rumble)
             softened += 0.55 * (white - rumble - softened)
             return softened
         }
+    }
+
+    /// `count` samples of noise that loop seamlessly: the overrun past `count` is cross-faded
+    /// into the start.
+    private static func loopable(count: Int, crossfade: Int, next: () -> Float) -> [Float] {
+        var noise = (0..<(count + crossfade)).map { _ in next() }
         for i in 0..<crossfade {
             let fadeIn = Float(i) / Float(crossfade)
             noise[i] = noise[i] * fadeIn + noise[count + i] * (1 - fadeIn)
