@@ -59,7 +59,8 @@ struct TapeCaseRow: View {
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            badges
+            TapeBadges(tape: tape, state: state)
+                .padding(.trailing, 8)
             Text(verbatim: TapeNames.duration(ms: tape.durationMs))
                 .font(DeckFont.monoBold.fixed(14))
                 .foregroundStyle(palette.ink)
@@ -73,27 +74,6 @@ struct TapeCaseRow: View {
         .accessibilityElement(children: .combine)
         .accessibilityAddTraits(state.selected ? [.isButton, .isSelected] : .isButton)
         .accessibilityAction(named: Text(state.selected ? "Deselect" : "Select"), actions.select)
-    }
-
-    @ViewBuilder private var badges: some View {
-        if state.inDeck {
-            TapeBadge(text: String(localized: "IN DECK"), foreground: palette.label, background: palette.ink)
-                .padding(.trailing, 6)
-        }
-        if tape.isNew {
-            TapeBadge(text: String(localized: "NEW"), foreground: .white, background: palette.danger)
-                .padding(.trailing, 6)
-        }
-        if let tidiedAt = state.tidiedAt {
-            let when = AutoTidy.whenText(of: tidiedAt, now: .now)
-            TapeBadge(text: "✂ \(when)", foreground: .white, background: palette.accent)
-                .padding(.trailing, 6)
-                .accessibilityLabel(Text("Auto-tidy deletes it \(when)"))
-        }
-        if tape.hasCaptions || state.transcribing {
-            TranscriptBadge(transcribing: state.transcribing, ink: palette.ink)
-                .padding(.trailing, 8)
-        }
     }
 
     private var stateGlyph: String {

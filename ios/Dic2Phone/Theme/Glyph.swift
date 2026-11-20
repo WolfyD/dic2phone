@@ -13,6 +13,7 @@ enum Glyph {
     static let setup = "⚙\u{FE0E}"
     static let warning = "⚠\u{FE0E}"
     static let stop = "■"
+    static let inDeck = "◉"
     static let check = "✔\u{FE0E}"
     static let close = "✕"
     static let sort = "↕\u{FE0E}"

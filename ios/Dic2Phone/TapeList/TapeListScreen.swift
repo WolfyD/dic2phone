@@ -1,8 +1,8 @@
 import SwiftUI
 
 /// The deck's tapes in their carry case, the shelf's in the wooden rack, or the vault's in the
-/// steel one. Tap plays, ⏏ loads into the deck, a long press selects; the keys below act on the
-/// selection, or on every tape.
+/// steel one; in MINIDISC mode, stacks of discs. Tap plays, ⏏ loads into the deck, a long press
+/// selects; the keys below act on the selection, or on every tape.
 struct TapeListScreen: View {
     private static let noticeDuration: Duration = .seconds(3)
 
@@ -116,12 +116,9 @@ struct TapeListScreen: View {
 
     private func hintRow(count: Int) -> some View {
         let loading = model.mode == .load
-        let hint = loading
-            ? String(localized: "TAP A TAPE TO PUT IT IN")
-            : String(localized: "TAP \(Glyph.play) PLAY · \(Glyph.eject) LOAD · HOLD SELECT")
         let sort = model.sort
         return HStack {
-            Text(verbatim: hint)
+            Text(verbatim: hint(loading: loading))
                 .font(loading ? DeckFont.monoBold.fixed(11) : DeckFont.mono.fixed(11))
                 .foregroundStyle(loading ? palette.accent : palette.dim)
                 .lineLimit(1)
@@ -132,6 +129,15 @@ struct TapeListScreen: View {
                     .frame(width: 104)
                     .accessibilityLabel(Text("Sort: \(sort.label)"))
             }
+        }
+    }
+
+    private func hint(loading: Bool) -> String {
+        switch (settings.minidisc, loading) {
+        case (false, true): String(localized: "TAP A TAPE TO PUT IT IN")
+        case (false, false): String(localized: "TAP \(Glyph.play) PLAY · \(Glyph.eject) LOAD · HOLD SELECT")
+        case (true, true): String(localized: "TAP A DISC, THEN AGAIN TO PUT IT IN")
+        case (true, false): String(localized: "TAP PULL OUT · AGAIN \(Glyph.play) · HOLD SELECT")
         }
     }
 
@@ -158,23 +164,27 @@ struct TapeListScreen: View {
     @ViewBuilder
     private func rack(_ tapes: [Tape]) -> some View {
         let waiting = model.waitingForTranscripts
-        switch model.mode.rack {
-        case .deck:
-            let goingSoon = tidySoon(tapes)
+        let goingSoon = tidySoon(tapes)
+        let state = { (tape: Tape) in rowState(of: tape, waiting: waiting, tidySoon: goingSoon) }
+        if settings.minidisc {
+            DiscStack(
+                tapes: tapes,
+                rack: model.mode.rack,
+                loadMode: model.mode == .load,
+                selecting: !model.selected.isEmpty,
+                state: state,
+                actions: rowActions(for:)
+            )
+        } else if model.mode.rack == .deck {
             CarryCase {
                 ForEach(tapes) { tape in
-                    TapeCaseRow(
-                        tape: tape,
-                        state: rowState(of: tape, waiting: waiting, tidySoon: goingSoon),
-                        loadMode: model.mode == .load,
-                        actions: rowActions(for: tape)
-                    )
+                    TapeCaseRow(tape: tape, state: state(tape), loadMode: model.mode == .load, actions: rowActions(for: tape))
                 }
             }
-        case .shelf, .vault:
+        } else {
             ShelfRack(material: model.mode.rack == .vault ? .steel : .wood) {
                 ForEach(tapes) { tape in
-                    ShelfSpineRow(tape: tape, state: rowState(of: tape, waiting: waiting, tidySoon: [:]), actions: rowActions(for: tape))
+                    ShelfSpineRow(tape: tape, state: state(tape), actions: rowActions(for: tape))
                 }
             }
         }

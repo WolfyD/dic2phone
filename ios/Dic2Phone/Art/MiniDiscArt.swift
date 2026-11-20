@@ -12,7 +12,7 @@ struct MiniDiscArt {
         .white.opacity(0.06), Color(hex: 0xFF66CC).opacity(0.19), .white.opacity(0.06),
         Color(hex: 0xFFE066).opacity(0.22), .white.opacity(0.06), .white.opacity(0.25),
     ])
-    private static let shutterMetal = Gradient(colors: [
+    static let shutterMetal = Gradient(colors: [
         Color(hex: 0xE4E6E9), Color(hex: 0xA9ADB3), Color(hex: 0xCDD0D4), Color(hex: 0x8C9096),
     ])
 
@@ -26,7 +26,7 @@ struct MiniDiscArt {
 
     func draw(in context: GraphicsContext, width: CGFloat) {
         let size = CGSize(width: width, height: width / Self.ratio)
-        let outline = Self.outline(size)
+        let outline = MiniDiscOutline(cut: width * 0.08, corner: width * 0.04).path(in: CGRect(origin: .zero, size: size))
         drawShell(outline, in: context, size: size)
         drawLabel(in: context, size: size)
         let slot = CGRect(x: width * 0.08, y: size.height * 0.53, width: width * 0.68, height: size.height * 0.40)
@@ -39,25 +39,6 @@ struct MiniDiscArt {
         drawShutter(in: underShell, size: size, slot: slot)
         drawWriteProtect(in: context, size: size)
         drawLength(in: context, size: size)
-    }
-
-    /// Rounded corners, but for the top-left one cut off square.
-    private static func outline(_ size: CGSize) -> Path {
-        let w = size.width
-        let h = size.height
-        let corner = w * 0.04
-        let cut = w * 0.08
-        var path = Path()
-        path.move(to: CGPoint(x: cut, y: 0))
-        path.addLine(to: CGPoint(x: w - corner, y: 0))
-        path.addQuadCurve(to: CGPoint(x: w, y: corner), control: CGPoint(x: w, y: 0))
-        path.addLine(to: CGPoint(x: w, y: h - corner))
-        path.addQuadCurve(to: CGPoint(x: w - corner, y: h), control: CGPoint(x: w, y: h))
-        path.addLine(to: CGPoint(x: corner, y: h))
-        path.addQuadCurve(to: CGPoint(x: 0, y: h - corner), control: CGPoint(x: 0, y: h))
-        path.addLine(to: CGPoint(x: 0, y: cut))
-        path.closeSubpath()
-        return path
     }
 
     private func drawShell(_ outline: Path, in context: GraphicsContext, size: CGSize) {
